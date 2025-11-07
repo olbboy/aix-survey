@@ -28,6 +28,8 @@ model Organization {
   // Relations
   users       User[]
   assessments Assessment[]
+  progressGoals ProgressGoal[]
+  assessmentHistory AssessmentHistory[]
 
   @@map("organizations")
 }
@@ -54,6 +56,7 @@ model User {
   auditLogs   AuditLog[]
   sessions    Session[]
   accounts    Account[]
+  progressGoals ProgressGoal[]
 
   @@index([email])
   @@index([organizationId])
@@ -251,12 +254,16 @@ model Assessment {
   snapshot          AssessmentSnapshot?
   auditLogs         AuditLog[]
   emailNotifications EmailNotification[]
+  milestones        ProgressMilestone[]
+  history           AssessmentHistory?
+  organizationName  String?  // Denormalized for easier querying
 
   @@index([sessionId])
   @@index([userId])
   @@index([organizationId])
   @@index([status])
   @@index([expiresAt])
+  @@index([finalizedAt])
   @@map("assessments")
 }
 
@@ -550,4 +557,141 @@ enum EmailStatus {
   CLICKED    // Recipient clicked a link
   FAILED     // Failed to send
   BOUNCED    // Email bounced back
+}
+
+// ============================================================================
+// PROGRESS TRACKING
+// ============================================================================
+
+/// Progress goals for organizations
+model ProgressGoal {
+  id              String   @id @default(cuid())
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId          String?  // Who created the goal
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Goal definition
+  goalType        GoalType
+  targetScore     Float?   // Target overall score (for OVERALL_SCORE type)
+  targetLevel     String?  // Target maturity level (for MATURITY_LEVEL type)
+  domainCode      String?  // Specific domain (for DOMAIN_SCORE type)
+  itemCode        String?  // Specific item (for ITEM_SCORE type)
+
+  // Target details
+  currentValue    Float?   // Starting value when goal created
+  targetValue     Float    // Target value to achieve
+  targetDate      DateTime // When to achieve by
+
+  // Status tracking
+  status          GoalStatus @default(ACTIVE)
+  achievedAt      DateTime?
+  achievedValue   Float?
+
+  // Metadata
+  title           String
+  description     String?  @db.Text
+  priority        GoalPriority @default(MEDIUM)
+
+  // Milestones
+  milestones      ProgressMilestone[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([targetDate])
+  @@map("progress_goals")
+}
+
+enum GoalType {
+  OVERALL_SCORE    // Improve overall assessment score
+  MATURITY_LEVEL   // Reach specific maturity level
+  DOMAIN_SCORE     // Improve specific domain score
+  ITEM_SCORE       // Improve specific item score
+  BENCHMARK_RANK   // Reach specific percentile ranking
+}
+
+enum GoalStatus {
+  ACTIVE      // Currently tracking
+  ACHIEVED    // Goal met
+  MISSED      // Deadline passed without achievement
+  CANCELLED   // User cancelled
+}
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Milestones within goals
+model ProgressMilestone {
+  id              String   @id @default(cuid())
+
+  goalId          String
+  goal            ProgressGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  // Milestone definition
+  title           String
+  description     String?  @db.Text
+  targetValue     Float    // Intermediate target
+  targetDate      DateTime
+
+  // Status
+  status          GoalStatus @default(ACTIVE)
+  achievedAt      DateTime?
+  achievedValue   Float?
+
+  // Assessment that achieved this milestone
+  assessmentId    String?
+  assessment      Assessment? @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([goalId])
+  @@index([status])
+  @@map("progress_milestones")
+}
+
+/// Assessment history metadata for progress tracking
+model AssessmentHistory {
+  id                String   @id @default(cuid())
+
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  assessmentId      String   @unique
+  assessment        Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  // Snapshot of key metrics at finalization
+  overallScore      Float
+  maturityLevel     String
+  domainScores      Json     // { "data": 3.5, "infra": 4.0, ... }
+
+  // Change tracking (compared to previous assessment)
+  previousAssessmentId String?
+  previousAssessment   AssessmentHistory? @relation("AssessmentSequence", fields: [previousAssessmentId], references: [id], onDelete: SetNull)
+  nextAssessments      AssessmentHistory[] @relation("AssessmentSequence")
+
+  scoreChange       Float?   // Difference from previous
+  levelChange       Int?     // Level improvement (-2 to +2)
+  improvementRate   Float?   // Percentage improvement
+
+  // Time metrics
+  daysSincePrevious Int?     // Days between assessments
+  assessmentNumber  Int      // Sequence number for this org (1, 2, 3, ...)
+
+  createdAt         DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([assessmentId])
+  @@index([previousAssessmentId])
+  @@map("assessment_history")
 }
