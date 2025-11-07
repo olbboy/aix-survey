@@ -23,7 +23,7 @@ import {
   Download,
   Loader2,
   AlertCircle,
-  ExternalLink,
+  Mail,
 } from 'lucide-react';
 
 interface Gap {
@@ -95,6 +95,10 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingCSV, setExportingCSV] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientName, setRecipientName] = useState('');
 
   useEffect(() => {
     const loadResults = async () => {
@@ -180,6 +184,48 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
       alert('Không thể xuất dữ liệu CSV. Vui lòng thử lại.');
     } finally {
       setExportingCSV(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!recipientEmail) {
+      alert('Vui lòng nhập địa chỉ email.');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+      alert('Địa chỉ email không hợp lệ.');
+      return;
+    }
+
+    try {
+      setSendingEmail(true);
+      const response = await fetch(`/api/assessments/${params.id}/send-results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail,
+          recipientName: recipientName || undefined,
+          includePDF: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send email');
+      }
+
+      alert('Email đã được gửi thành công! Vui lòng kiểm tra hộp thư của bạn.');
+      setShowEmailDialog(false);
+      setRecipientEmail('');
+      setRecipientName('');
+    } catch (err) {
+      console.error('Failed to send email:', err);
+      alert('Không thể gửi email. Vui lòng thử lại.');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -560,7 +606,84 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
             )}
             {exportingCSV ? 'Đang xuất CSV...' : 'Xuất CSV (Simple)'}
           </Button>
+          <Button
+            size="lg"
+            onClick={() => setShowEmailDialog(true)}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            Gửi kết quả qua Email
+          </Button>
         </div>
+
+        {/* Email Dialog */}
+        {showEmailDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardHeader>
+                <CardTitle>Gửi kết quả qua Email</CardTitle>
+                <CardDescription>
+                  Báo cáo PDF sẽ được đính kèm trong email
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Email người nhận *
+                  </label>
+                  <input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="example@company.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Tên người nhận (tùy chọn)
+                  </label>
+                  <input
+                    type="text"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail}
+                    className="flex-1"
+                  >
+                    {sendingEmail ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Đang gửi...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Gửi Email
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowEmailDialog(false);
+                      setRecipientEmail('');
+                      setRecipientName('');
+                    }}
+                    disabled={sendingEmail}
+                  >
+                    Hủy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

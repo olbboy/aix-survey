@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Maturity Assessment Results</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: #ffffff;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .header p {
+      margin: 10px 0 0 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #1f2937;
+    }
+    .intro {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      color: #4b5563;
+    }
+    .score-card {
+      background: linear-gradient(135deg, {{maturityColor maturityLevel}} 0%, {{maturityColor maturityLevel}}dd 100%);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 30px;
+      color: #ffffff;
+    }
+    .score-label {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+    .maturity-level {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+    .total-score {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .score-max {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+    .info-box {
+      background-color: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+    }
+    .info-box-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e40af;
+      margin-bottom: 10px;
+    }
+    .info-box-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #4b5563;
+    }
+    .stats-grid {
+      display: table;
+      width: 100%;
+      margin-bottom: 30px;
+    }
+    .stat-item {
+      display: table-cell;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      margin: 20px 0;
+      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+    }
+    .cta-button:hover {
+      box-shadow: 0 6px 8px rgba(59, 130, 246, 0.4);
+    }
+    .attachment-notice {
+      background-color: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #78350f;
+    }
+    .footer {
+      background-color: #f9fafb;
+      padding: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #6b7280;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e5e7eb;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🎯 AI Maturity Assessment</h1>
+      <p>Assessment Results Report</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- Greeting -->
+      <div class="greeting">
+        Xin chào,
+      </div>
+
+      <!-- Intro -->
+      <div class="intro">
+        Thank you for completing the AI Maturity Assessment for <strong>{{organizationName}}</strong>.
+        Your detailed report is now ready for review.
+      </div>
+
+      <!-- Score Card -->
+      <div class="score-card">
+        <div class="score-label">Maturity Level Achieved</div>
+        <div class="maturity-level">{{maturityLevel}}</div>
+        <div class="total-score">{{formatNumber totalScore 2}}</div>
+        <div class="score-max">/ 5.0</div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="info-box">
+        <div class="info-box-title">📊 What does this mean?</div>
+        <div class="info-box-content">
+          {{#if (gte totalScore 4.6)}}
+            Your organization demonstrates <strong>optimal AI maturity</strong> with systematic processes,
+            continuous improvement, and industry-leading practices. Continue exploring cutting-edge AI innovations.
+          {{else if (gte totalScore 3.6)}}
+            Your organization shows <strong>mature AI capabilities</strong> with well-defined processes.
+            Focus on optimizing existing systems and exploring advanced AI applications.
+          {{else if (gte totalScore 2.6)}}
+            Your organization is in a <strong>development phase</strong> with growing AI capabilities.
+            Prioritize standardizing processes and building organizational readiness.
+          {{else if (gte totalScore 1.6)}}
+            Your organization is in the <strong>early stages</strong> of AI adoption.
+            Focus on building foundational capabilities and organizational awareness.
+          {{else}}
+            Your organization is <strong>beginning its AI journey</strong>.
+            Establish basic data collection and create a roadmap for AI adoption.
+          {{/if}}
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Domains</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">37</div>
+          <div class="stat-label">Items</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">100%</div>
+          <div class="stat-label">Complete</div>
+        </div>
+      </div>
+
+      <!-- PDF Attachment Notice -->
+      <div class="attachment-notice">
+        📎 A comprehensive PDF report is attached to this email with detailed analysis,
+        gap recommendations, and strategic action items.
+      </div>
+
+      <!-- CTA Button -->
+      <center>
+        <a href="{{resultsUrl}}" class="cta-button">
+          View Full Report Online →
+        </a>
+      </center>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Additional Info -->
+      <div class="intro">
+        <strong>Assessment Completed:</strong> {{formatDate completedAt}}<br>
+        <strong>Organization:</strong> {{organizationName}}
+      </div>
+
+      <!-- Next Steps -->
+      <div class="info-box">
+        <div class="info-box-title">🚀 Next Steps</div>
+        <div class="info-box-content">
+          <ol style="margin: 10px 0; padding-left: 20px;">
+            <li>Review the detailed PDF report attached to this email</li>
+            <li>Share results with key stakeholders and leadership</li>
+            <li>Prioritize improvement areas based on business objectives</li>
+            <li>Develop a detailed roadmap with timelines and metrics</li>
+            <li>Schedule follow-up assessments quarterly to track progress</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Support -->
+      <div class="intro" style="margin-top: 30px;">
+        If you have any questions about your results or need assistance interpreting the report,
+        please don't hesitate to contact our support team.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        <strong>AI Maturity Assessment Platform</strong><br>
+        Helping organizations measure and improve their AI readiness
+      </p>
+      <p style="margin-top: 15px;">
+        This is an automated email. Please do not reply directly to this message.<br>
+        For support, visit our <a href="#">help center</a> or <a href="#">contact us</a>.
+      </p>
+      <p style="margin-top: 15px; color: #9ca3af; font-size: 11px;">
+        © 2025 AI Maturity Assessment Platform. All rights reserved.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

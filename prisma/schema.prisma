@@ -246,10 +246,11 @@ model Assessment {
   expiresAt      DateTime? // For guest drafts (30 days TTL)
 
   // Relations
-  responses      Response[]
-  evidences      Evidence[]
-  snapshot       AssessmentSnapshot?
-  auditLogs      AuditLog[]
+  responses         Response[]
+  evidences         Evidence[]
+  snapshot          AssessmentSnapshot?
+  auditLogs         AuditLog[]
+  emailNotifications EmailNotification[]
 
   @@index([sessionId])
   @@index([userId])
@@ -424,4 +425,59 @@ model BenchmarkData {
   @@index([industry])
   @@index([domainCode])
   @@map("benchmark_data")
+}
+
+// ============================================================================
+// EMAIL NOTIFICATIONS
+// ============================================================================
+
+/// Email notification tracking
+model EmailNotification {
+  id            String   @id @default(cuid())
+
+  assessmentId  String
+  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  // Recipient
+  recipientEmail String
+  recipientName  String?
+
+  // Email details
+  subject       String
+  templateName  String   // "assessment_results", "reminder", etc.
+
+  // Status tracking
+  status        EmailStatus @default(PENDING)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+
+  // Error handling
+  attempts      Int      @default(0)
+  lastError     String?  @db.Text
+
+  // Metadata
+  attachments   Json?    // List of attachment file keys
+  templateData  Json?    // Data used for template rendering
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([assessmentId])
+  @@index([recipientEmail])
+  @@index([status])
+  @@index([sentAt])
+  @@map("email_notifications")
+}
+
+enum EmailStatus {
+  PENDING    // Queued for sending
+  SENDING    // Currently being sent
+  SENT       // Successfully sent to SMTP server
+  DELIVERED  // Confirmed delivered to recipient
+  OPENED     // Recipient opened the email
+  CLICKED    // Recipient clicked a link
+  FAILED     // Failed to send
+  BOUNCED    // Email bounced back
 }
