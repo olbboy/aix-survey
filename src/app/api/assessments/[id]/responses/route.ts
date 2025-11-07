@@ -92,13 +92,13 @@ export async function PATCH(
             },
           },
           update: {
-            score: response.score || 0,
+            score: response.score, // Keep null if not scored, don't default to 0
             currentState: response.currentState,
           },
           create: {
             assessmentId: assessment.id,
             itemId,
-            score: response.score || 0,
+            score: response.score, // Keep null if not scored, don't default to 0
             currentState: response.currentState,
           },
         })

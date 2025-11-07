@@ -64,15 +64,23 @@ export async function POST(
 
     // Prepare data for scoring
     const domainData = assessment.template.domains.map((domain: any) => {
-      const items = domain.items.map((item: any) => {
-        const response = assessment.responses.find((r: any) => r.itemId === item.id);
-        return {
-          itemCode: item.itemCode,
-          itemId: item.id,
-          score: response?.score || 0,
-          weight: item.weight,
-        };
-      }).filter((item: any) => item.score > 0); // Only scored items
+      const items = domain.items
+        .map((item: any) => {
+          const response = assessment.responses.find((r: any) => r.itemId === item.id);
+
+          // Only include items that have been scored (score is not null and > 0)
+          if (!response || response.score === null || response.score === undefined || response.score <= 0) {
+            return null;
+          }
+
+          return {
+            itemCode: item.itemCode,
+            itemId: item.id,
+            score: response.score,
+            weight: item.weight,
+          };
+        })
+        .filter((item: any) => item !== null); // Filter out null items
 
       return {
         domainCode: domain.code,
@@ -88,9 +96,15 @@ export async function POST(
     const scores = calculateAssessmentScore(domainData);
 
     // Create item scores map (use itemId as key for proper lookup)
+    // Only include items with actual scores (> 0)
     const itemScores: Record<string, number> = {};
     assessment.responses.forEach((response: any) => {
-      if (response.itemId && response.score !== null && response.score !== undefined) {
+      if (
+        response.itemId &&
+        response.score !== null &&
+        response.score !== undefined &&
+        response.score > 0
+      ) {
         itemScores[response.itemId] = response.score;
       }
     });
