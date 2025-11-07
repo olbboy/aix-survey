@@ -64,7 +64,44 @@ export async function GET(
     }
 
     // Get itemScores from snapshot (already calculated when finalized)
-    const itemScores = assessment.snapshot.itemScores as Record<string, number>;
+    let itemScores = assessment.snapshot.itemScores as Record<string, number>;
+
+    // Debug: Log itemScores to diagnose issues
+    console.log('[Results API] Assessment ID:', params.id);
+    console.log('[Results API] itemScores keys count:', Object.keys(itemScores || {}).length);
+    console.log('[Results API] itemScores sample:', Object.entries(itemScores || {}).slice(0, 3));
+
+    // Check if itemScores is empty or invalid - FALLBACK to responses
+    if (!itemScores || Object.keys(itemScores).length === 0) {
+      console.error('[Results API] WARNING: itemScores is empty! Snapshot may be corrupted.');
+      console.error('[Results API] Attempting to rebuild from responses...');
+
+      // Rebuild itemScores from responses as fallback
+      itemScores = {};
+      assessment.responses.forEach((response: any) => {
+        if (
+          response.itemId &&
+          response.score !== null &&
+          response.score !== undefined &&
+          response.score > 0
+        ) {
+          itemScores[response.itemId] = response.score;
+        }
+      });
+
+      console.log('[Results API] Rebuilt itemScores count:', Object.keys(itemScores).length);
+
+      if (Object.keys(itemScores).length === 0) {
+        console.error('[Results API] ERROR: No valid scores found in responses either!');
+        return NextResponse.json(
+          {
+            error: 'No assessment data found',
+            message: 'Vui lòng hoàn thành lại đánh giá. Dữ liệu snapshot có thể bị lỗi.'
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // Prepare item data for gap analysis using snapshot scores
     const items = assessment.template.domains.flatMap((domain: any) =>
@@ -91,17 +128,26 @@ export async function GET(
     const recommendations = generateRecommendations(gaps);
 
     // Prepare domains with items for radar charts using snapshot scores
+    // CRITICAL FIX: Only include items that have actual scores (no || 0 defaulting!)
     const domains = assessment.template.domains.map((domain: any) => ({
       code: domain.code,
       name: domain.name,
-      items: domain.items.map((item: any) => {
-        const score = itemScores[item.id] || 0;
-        return {
-          itemCode: item.itemCode,
-          itemName: item.itemName,
-          score: score,
-        };
-      }),
+      items: domain.items
+        .map((item: any) => {
+          const score = itemScores[item.id];
+
+          // Skip items without scores (don't default to 0!)
+          if (score === undefined || score === null || score <= 0) {
+            return null;
+          }
+
+          return {
+            itemCode: item.itemCode,
+            itemName: item.itemName,
+            score: score,
+          };
+        })
+        .filter((item: any) => item !== null), // Remove null items
     }));
 
     // Return comprehensive results
