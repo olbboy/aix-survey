@@ -78,8 +78,12 @@ export function calculateItemGaps(
 ): GapItem[] {
   return items
     .map((item) => {
-      // Default target: next whole number
-      const defaultTarget = Math.min(Math.ceil(item.score), 5);
+      // Default target: next whole number, minimum of current + 1
+      const ceilScore = Math.ceil(item.score);
+      const defaultTarget = Math.min(
+        ceilScore === item.score ? ceilScore + 1 : ceilScore,
+        5
+      );
       const target = targetScores?.[item.itemCode] || defaultTarget;
       const gap = target - item.score;
 
