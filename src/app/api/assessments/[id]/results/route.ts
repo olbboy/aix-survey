@@ -83,6 +83,20 @@ export async function GET(
     const weaknesses = getTopWeaknesses(items, 5);
     const recommendations = generateRecommendations(gaps);
 
+    // Prepare domains with items for radar charts
+    const domains = assessment.template.domains.map((domain: any) => ({
+      code: domain.code,
+      name: domain.name,
+      items: domain.items.map((item: any) => {
+        const response = assessment.responses.find((r: any) => r.itemId === item.id);
+        return {
+          itemCode: item.itemCode,
+          itemName: item.itemName,
+          score: response?.score || 0,
+        };
+      }),
+    }));
+
     // Return comprehensive results
     return NextResponse.json({
       assessment: {
@@ -102,6 +116,7 @@ export async function GET(
         itemScores: assessment.snapshot.itemScores,
         createdAt: assessment.snapshot.createdAt,
       },
+      domains,
       analysis: {
         strengths: strengths.map((s) => ({
           itemCode: s.itemCode,

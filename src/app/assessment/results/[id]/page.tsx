@@ -77,9 +77,20 @@ interface Assessment {
   finalizedAt: string | null;
 }
 
+interface DomainWithItems {
+  code: string;
+  name: string;
+  items: Array<{
+    itemCode: string;
+    itemName: string;
+    score: number;
+  }>;
+}
+
 interface ResultsData {
   assessment: Assessment;
   snapshot: Snapshot;
+  domains: DomainWithItems[];
   analysis: Analysis;
 }
 
@@ -261,31 +272,51 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
     );
   }
 
-  const { assessment, snapshot, analysis } = resultsData;
+  const { assessment, snapshot, domains, analysis } = resultsData;
   const maturityConfig = MATURITY_CONFIG[snapshot.maturityLevel as keyof typeof MATURITY_CONFIG];
 
-  // Prepare radar chart data
-  const radarData = Object.entries(snapshot.domainScores).map(([code, score]) => {
-    const domainNames: Record<string, string> = {
-      data: 'Dữ liệu',
-      infra: 'Hạ tầng',
-      tech: 'Công nghệ',
-      org: 'Tổ chức',
-      policy: 'Chính sách',
-    };
-    return {
-      domain: domainNames[code] || code,
-      score: Math.round(score * 10) / 10,
-    };
-  });
+  // Domain name mapping for display
+  const domainNames: Record<string, string> = {
+    data: 'Dữ liệu',
+    infra: 'Hạ tầng',
+    tech: 'Công nghệ',
+    org: 'Tổ chức',
+    policy: 'Chính sách',
+  };
 
-  // Chart configuration for shadcn/ui
-  const chartConfig = {
-    score: {
-      label: 'Điểm số',
-      color: 'hsl(var(--chart-1))',
-    },
-  } satisfies ChartConfig;
+  // Chart color configuration for each domain
+  const domainChartConfigs: Record<string, ChartConfig> = {
+    data: {
+      score: {
+        label: 'Điểm số',
+        color: 'hsl(var(--chart-1))',
+      },
+    } satisfies ChartConfig,
+    infra: {
+      score: {
+        label: 'Điểm số',
+        color: 'hsl(var(--chart-2))',
+      },
+    } satisfies ChartConfig,
+    tech: {
+      score: {
+        label: 'Điểm số',
+        color: 'hsl(var(--chart-3))',
+      },
+    } satisfies ChartConfig,
+    org: {
+      score: {
+        label: 'Điểm số',
+        color: 'hsl(var(--chart-4))',
+      },
+    } satisfies ChartConfig,
+    policy: {
+      score: {
+        label: 'Điểm số',
+        color: 'hsl(var(--chart-5))',
+      },
+    } satisfies ChartConfig,
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
@@ -329,84 +360,117 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
           </CardContent>
         </Card>
 
-        {/* Radar Chart & Domain Scores */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Radar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Biểu đồ năng lực 5 lĩnh vực</CardTitle>
-              <CardDescription>Điểm trung bình theo từng lĩnh vực</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px]">
-                <RadarChart data={radarData}>
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="line" />}
-                  />
-                  <PolarGrid className="fill-[--color-score] opacity-20" />
-                  <PolarAngleAxis
-                    dataKey="domain"
-                    tick={{
-                      fill: 'hsl(var(--foreground))',
-                      fontSize: 12,
-                    }}
-                  />
-                  <PolarRadiusAxis
-                    angle={90}
-                    domain={[0, 5]}
-                    tick={{
-                      fill: 'hsl(var(--muted-foreground))',
-                      fontSize: 10,
-                    }}
-                    axisLine={false}
-                  />
-                  <Radar
-                    name="Điểm"
-                    dataKey="score"
-                    fill="var(--color-score)"
-                    fillOpacity={0.6}
-                    stroke="var(--color-score)"
-                    strokeWidth={2}
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </RadarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+        {/* Domain Radar Charts - One for Each Domain */}
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Phân Tích Chi Tiết Theo Lĩnh Vực
+            </h2>
+            <p className="text-slate-600">
+              Biểu đồ radar cho từng lĩnh vực với điểm số các tiêu chí
+            </p>
+          </div>
 
-          {/* Domain Scores Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Chi tiết điểm theo lĩnh vực</CardTitle>
-              <CardDescription>Phân tích chi tiết từng lĩnh vực</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {radarData.map((item) => (
-                  <div key={item.domain} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-900 mb-1">
-                        {item.domain}
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${(item.score / 5) * 100}%` }}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {domains.map((domain) => {
+              const domainScore = snapshot.domainScores[domain.code];
+              const radarData = domain.items.map((item) => ({
+                itemCode: item.itemCode,
+                itemName: item.itemName.length > 30
+                  ? item.itemName.substring(0, 27) + '...'
+                  : item.itemName,
+                score: item.score,
+              }));
+
+              const chartConfig = domainChartConfigs[domain.code] || domainChartConfigs.data;
+
+              return (
+                <Card key={domain.code} className="shadow-md hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">
+                        {domain.name}
+                      </CardTitle>
+                      <Badge variant="outline" className="text-sm font-bold">
+                        {domainScore.toFixed(2)} / 5.0
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-xs">
+                      {domain.items.length} tiêu chí đánh giá
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={chartConfig}
+                      className="mx-auto aspect-square max-h-[250px]"
+                    >
+                      <RadarChart data={radarData}>
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent indicator="line" />}
                         />
+                        <PolarGrid
+                          className="fill-[--color-score] opacity-20"
+                          gridType="polygon"
+                        />
+                        <PolarAngleAxis
+                          dataKey="itemCode"
+                          tick={{
+                            fill: 'hsl(var(--foreground))',
+                            fontSize: 10,
+                          }}
+                        />
+                        <PolarRadiusAxis
+                          angle={90}
+                          domain={[0, 5]}
+                          tick={{
+                            fill: 'hsl(var(--muted-foreground))',
+                            fontSize: 9,
+                          }}
+                          axisLine={false}
+                        />
+                        <Radar
+                          name={domain.name}
+                          dataKey="score"
+                          fill="var(--color-score)"
+                          fillOpacity={0.5}
+                          stroke="var(--color-score)"
+                          strokeWidth={2}
+                          dot={{
+                            fill: 'var(--color-score)',
+                            fillOpacity: 1,
+                            r: 3,
+                          }}
+                        />
+                      </RadarChart>
+                    </ChartContainer>
+
+                    {/* Items List */}
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="text-xs font-semibold text-slate-700 mb-2">
+                        Chi tiết điểm:
+                      </div>
+                      <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                        {domain.items.map((item) => (
+                          <div
+                            key={item.itemCode}
+                            className="flex items-center justify-between text-xs"
+                          >
+                            <span className="text-slate-600 truncate flex-1 mr-2">
+                              {item.itemCode}
+                            </span>
+                            <span className="font-semibold text-slate-900 shrink-0">
+                              {item.score.toFixed(1)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="ml-4 text-right">
-                      <div className="text-xl font-bold text-slate-900">
-                        {item.score}
-                      </div>
-                      <div className="text-xs text-slate-500">/ 5.0</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
 
         {/* Strengths & Weaknesses */}
