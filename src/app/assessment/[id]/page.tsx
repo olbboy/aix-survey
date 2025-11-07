@@ -130,15 +130,63 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
     loadAssessment();
   }, [params.id]);
 
+  // Calculate progress whenever responses change
+  useEffect(() => {
+    if (!assessmentData) return;
+
+    const totalItems = assessmentData.template.domains.reduce(
+      (sum, domain) => sum + domain.items.length,
+      0
+    );
+    const answeredItems = Object.values(responses).filter(
+      (r) => r.score !== null && r.score > 0
+    ).length;
+    const newProgress = Math.round((answeredItems / totalItems) * 100);
+    setProgress(newProgress);
+  }, [responses, assessmentData]);
+
   // Handle score change
   const handleScoreChange = (itemId: string, score: number) => {
-    setResponses((prev) => ({
-      ...prev,
-      [itemId]: {
-        score,
-        currentState: prev[itemId]?.currentState || '',
-      },
-    }));
+    setResponses((prev) => {
+      const updated = {
+        ...prev,
+        [itemId]: {
+          score,
+          currentState: prev[itemId]?.currentState || '',
+        },
+      };
+
+      // Check if current domain is complete and auto-navigate
+      if (assessmentData && activeTab) {
+        const currentDomain = assessmentData.template.domains.find(
+          (d) => d.code === activeTab
+        );
+        if (currentDomain) {
+          const domainItemIds = currentDomain.items.map((item) => item.id);
+          const allAnswered = domainItemIds.every(
+            (id) => updated[id]?.score && updated[id].score > 0
+          );
+
+          if (allAnswered) {
+            // Find next domain
+            const currentIndex = assessmentData.template.domains.findIndex(
+              (d) => d.code === activeTab
+            );
+            if (currentIndex < assessmentData.template.domains.length - 1) {
+              const nextDomain = assessmentData.template.domains[currentIndex + 1];
+              // Auto-navigate after a short delay
+              setTimeout(() => {
+                setActiveTab(nextDomain.code);
+                // Scroll to top smoothly
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 500);
+            }
+          }
+        }
+      }
+
+      return updated;
+    });
   };
 
   // Handle current state change
@@ -289,36 +337,101 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
                 ))}
               </TabsList>
 
-              {assessmentData.template.domains.map((domain) => (
-                <TabsContent key={domain.code} value={domain.code}>
-                  <Card className="mb-6">
-                    <CardHeader>
-                      <CardTitle>{domain.name}</CardTitle>
-                      <CardDescription>
-                        {domain.items.length} tiêu chí đánh giá
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+              {assessmentData.template.domains.map((domain, index) => {
+                const domainItemIds = domain.items.map((item) => item.id);
+                const answeredInDomain = domainItemIds.filter(
+                  (id) => responses[id]?.score && responses[id].score > 0
+                ).length;
+                const isDomainComplete = answeredInDomain === domain.items.length;
+                const isLastDomain = index === assessmentData.template.domains.length - 1;
+                const nextDomain = !isLastDomain
+                  ? assessmentData.template.domains[index + 1]
+                  : null;
 
-                  {domain.items.map((item) => (
-                    <QuestionItem
-                      key={item.id}
-                      itemId={item.id}
-                      itemCode={item.itemCode}
-                      itemName={item.itemName}
-                      level1={item.level1}
-                      level2={item.level2}
-                      level3={item.level3}
-                      level4={item.level4}
-                      level5={item.level5}
-                      score={responses[item.id]?.score || null}
-                      currentState={responses[item.id]?.currentState || ''}
-                      onScoreChange={handleScoreChange}
-                      onCurrentStateChange={handleCurrentStateChange}
-                    />
-                  ))}
-                </TabsContent>
-              ))}
+                return (
+                  <TabsContent key={domain.code} value={domain.code}>
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>{domain.name}</span>
+                          {isDomainComplete && (
+                            <Badge variant="default" className="bg-green-600">
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Hoàn thành
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {domain.items.length} tiêu chí đánh giá • {answeredInDomain}/{domain.items.length} đã trả lời
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+
+                    {domain.items.map((item) => (
+                      <QuestionItem
+                        key={item.id}
+                        itemId={item.id}
+                        itemCode={item.itemCode}
+                        itemName={item.itemName}
+                        level1={item.level1}
+                        level2={item.level2}
+                        level3={item.level3}
+                        level4={item.level4}
+                        level5={item.level5}
+                        score={responses[item.id]?.score || null}
+                        currentState={responses[item.id]?.currentState || ''}
+                        onScoreChange={handleScoreChange}
+                        onCurrentStateChange={handleCurrentStateChange}
+                      />
+                    ))}
+
+                    {/* Navigation buttons at bottom */}
+                    {!isLastDomain && nextDomain && (
+                      <Card className="mt-6 border-2 border-blue-200 bg-blue-50">
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-blue-900">
+                                {isDomainComplete
+                                  ? '✅ Đã hoàn thành lĩnh vực này!'
+                                  : `Còn ${domain.items.length - answeredInDomain} câu hỏi chưa trả lời`}
+                              </p>
+                              <p className="text-sm text-blue-700 mt-1">
+                                Tiếp theo: {nextDomain.name}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                setActiveTab(nextDomain.code);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Tiếp theo
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Completion message for last domain */}
+                    {isLastDomain && isDomainComplete && (
+                      <Card className="mt-6 border-2 border-green-200 bg-green-50">
+                        <CardContent className="p-6 text-center">
+                          <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                          <p className="font-bold text-green-900 text-lg">
+                            🎉 Chúc mừng! Bạn đã hoàn thành tất cả câu hỏi!
+                          </p>
+                          <p className="text-sm text-green-700 mt-2">
+                            Nhấn nút "Hoàn thành đánh giá" bên phải để xem kết quả
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                );
+              })}
             </Tabs>
           </div>
 
