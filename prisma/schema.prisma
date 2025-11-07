@@ -399,7 +399,7 @@ model AuditLog {
 // BENCHMARK DATA
 // ============================================================================
 
-/// Anonymous benchmark data for industry comparison
+/// Anonymous benchmark data for industry comparison (Domain-level)
 model BenchmarkData {
   id         String   @id @default(cuid())
 
@@ -414,17 +414,87 @@ model BenchmarkData {
   p25        Float    // 25th percentile
   p50        Float    // Median
   p75        Float    // 75th percentile
+  p90        Float    // 90th percentile
   minScore   Float
   maxScore   Float
+  stdDev     Float    // Standard deviation
+
+  // Maturity level distribution
+  maturityDistribution Json? // { "Sơ khai": 5, "Khởi đầu": 15, ... }
 
   sampleSize Int      // Number of assessments in this bucket
 
+  createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@unique([industry, size, domainCode])
   @@index([industry])
   @@index([domainCode])
+  @@index([region])
   @@map("benchmark_data")
+}
+
+/// Item-level benchmark data for detailed comparison
+model BenchmarkItemData {
+  id         String   @id @default(cuid())
+
+  industry   String
+  size       String
+  region     String?
+
+  itemCode   String   // "1.1", "1.2", etc.
+
+  // Statistics
+  avgScore   Float
+  p25        Float    // 25th percentile
+  p50        Float    // Median
+  p75        Float    // 75th percentile
+  p90        Float    // 90th percentile
+  minScore   Float
+  maxScore   Float
+  stdDev     Float    // Standard deviation
+
+  // Score distribution
+  scoreDistribution Json? // { "1": 10, "2": 20, "3": 30, "4": 25, "5": 15 }
+
+  sampleSize Int      // Number of responses
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([industry, size, itemCode])
+  @@index([industry])
+  @@index([itemCode])
+  @@index([region])
+  @@map("benchmark_item_data")
+}
+
+/// Historical benchmark snapshots for trend analysis
+model BenchmarkSnapshot {
+  id            String   @id @default(cuid())
+
+  snapshotDate  DateTime // Date of this snapshot (typically monthly/quarterly)
+
+  industry      String
+  size          String
+  region        String?
+
+  // Aggregate data
+  domainScores  Json     // { "data": { avg: 3.2, p50: 3.5, ... }, ... }
+  itemScores    Json     // { "1.1": { avg: 3.5, p50: 4.0, ... }, ... }
+  overallScore  Float    // Average across all domains
+
+  // Metadata
+  sampleSize    Int      // Total assessments in snapshot
+  templateVersion String // Template version used
+
+  createdAt     DateTime @default(now())
+
+  @@unique([industry, size, snapshotDate])
+  @@index([industry])
+  @@index([snapshotDate])
+  @@index([region])
+  @@map("benchmark_snapshots")
 }
 
 // ============================================================================

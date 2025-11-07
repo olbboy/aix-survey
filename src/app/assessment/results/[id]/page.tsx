@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GuestLinkBanner } from '@/components/assessment/guest-link-banner';
+import { BenchmarkComparison } from '@/components/benchmarks/benchmark-comparison';
 import {
   Radar,
   RadarChart,
@@ -564,6 +565,11 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Benchmark Comparison */}
+        {assessment.industry && assessment.size && (
+          <BenchmarkComparison assessmentId={params.id} />
+        )}
 
         {/* Actions */}
         <div className="flex flex-wrap gap-4 justify-center">
