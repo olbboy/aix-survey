@@ -309,14 +309,21 @@ model Evidence {
   storageKey   String   // S3 key
   checksum     String   // SHA-256
 
+  // Metadata
+  description  String?  @db.Text // User-provided description
+  uploadedBy   String?  // userId or "guest-{sessionId}"
+  itemCode     String?  // Reference to which item this evidence is for
+
   // Security
   virusScanned Boolean  @default(false)
   scanResult   String?  // "clean", "infected", "error"
 
   uploadedAt   DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([assessmentId])
   @@index([responseId])
+  @@index([uploadedBy])
   @@map("evidences")
 }
 
