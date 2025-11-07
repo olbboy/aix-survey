@@ -12,9 +12,16 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  ResponsiveContainer,
   Legend,
 } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import {
   TrendingUp,
   TrendingDown,
@@ -272,6 +279,14 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
     };
   });
 
+  // Chart configuration for shadcn/ui
+  const chartConfig = {
+    score: {
+      label: 'Điểm số',
+      color: 'hsl(var(--chart-1))',
+    },
+  } satisfies ChartConfig;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="max-w-7xl mx-auto">
@@ -323,21 +338,40 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
               <CardDescription>Điểm trung bình theo từng lĩnh vực</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px]">
                 <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="domain" />
-                  <PolarRadiusAxis angle={90} domain={[0, 5]} />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="line" />}
+                  />
+                  <PolarGrid className="fill-[--color-score] opacity-20" />
+                  <PolarAngleAxis
+                    dataKey="domain"
+                    tick={{
+                      fill: 'hsl(var(--foreground))',
+                      fontSize: 12,
+                    }}
+                  />
+                  <PolarRadiusAxis
+                    angle={90}
+                    domain={[0, 5]}
+                    tick={{
+                      fill: 'hsl(var(--muted-foreground))',
+                      fontSize: 10,
+                    }}
+                    axisLine={false}
+                  />
                   <Radar
                     name="Điểm"
                     dataKey="score"
-                    stroke="#3b82f6"
-                    fill="#3b82f6"
+                    fill="var(--color-score)"
                     fillOpacity={0.6}
+                    stroke="var(--color-score)"
+                    strokeWidth={2}
                   />
-                  <Legend />
+                  <ChartLegend content={<ChartLegendContent />} />
                 </RadarChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             </CardContent>
           </Card>
 
