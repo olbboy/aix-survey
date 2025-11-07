@@ -28,21 +28,21 @@ interface BenchmarkComparisonData {
   industry: string;
   size: string;
   region?: string;
-  overallScore: number;
-  industryOverallAverage: number;
+  overallScore: number | null;
+  industryOverallAverage: number | null;
   overallPercentileRank: number;
   overallRanking: string;
   domainComparisons: Array<{
     domainCode: string;
     domainName: string;
     userScore: number;
-    industryAverage: number;
-    industryMedian: number;
-    industryP25: number;
-    industryP75: number;
-    industryP90: number;
+    industryAverage: number | null;
+    industryMedian: number | null;
+    industryP25: number | null;
+    industryP75: number | null;
+    industryP90: number | null;
     percentileRank: number;
-    gap: number;
+    gap: number | null;
     ranking: string;
     maturityLevel: string;
   }>;
@@ -50,16 +50,16 @@ interface BenchmarkComparisonData {
     itemCode: string;
     itemName: string;
     userScore: number;
-    industryAverage: number;
-    gap: number;
+    industryAverage: number | null;
+    gap: number | null;
     percentileRank: number;
   }>;
   topWeaknesses: Array<{
     itemCode: string;
     itemName: string;
     userScore: number;
-    industryAverage: number;
-    gap: number;
+    industryAverage: number | null;
+    gap: number | null;
     percentileRank: number;
   }>;
   peerInsights: {
@@ -135,7 +135,10 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
     );
   }
 
-  const gapPercentage = ((data.overallScore - data.industryOverallAverage) / data.industryOverallAverage) * 100;
+  const gapPercentage =
+    data.overallScore !== null && data.industryOverallAverage !== null && data.industryOverallAverage !== 0
+      ? ((data.overallScore - data.industryOverallAverage) / data.industryOverallAverage) * 100
+      : null;
 
   return (
     <div className="space-y-6">
@@ -163,7 +166,9 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
             {/* Your Score */}
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-sm font-medium text-blue-900 mb-1">Your Score</div>
-              <div className="text-4xl font-bold text-blue-600">{data.overallScore.toFixed(2)}</div>
+              <div className="text-4xl font-bold text-blue-600">
+                {data.overallScore !== null ? data.overallScore.toFixed(2) : 'N/A'}
+              </div>
               <div className="text-xs text-blue-700 mt-1">{data.peerInsights.maturityLevel}</div>
             </div>
 
@@ -171,7 +176,7 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-sm font-medium text-gray-900 mb-1">Industry Average</div>
               <div className="text-4xl font-bold text-gray-600">
-                {data.industryOverallAverage.toFixed(2)}
+                {data.industryOverallAverage !== null ? data.industryOverallAverage.toFixed(2) : 'N/A'}
               </div>
               <div className="text-xs text-gray-600 mt-1">
                 {data.peerInsights.totalPeers} organizations
@@ -181,20 +186,26 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
             {/* Gap */}
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-sm font-medium text-green-900 mb-1">Your Gap</div>
-              <div className="flex items-center justify-center gap-2">
-                {gapPercentage > 0 ? (
-                  <TrendingUp className="h-8 w-8 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-8 w-8 text-red-600" />
-                )}
-                <div className={`text-4xl font-bold ${gapPercentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {gapPercentage > 0 ? '+' : ''}
-                  {gapPercentage.toFixed(1)}%
-                </div>
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                {gapPercentage > 0 ? 'Above' : 'Below'} average
-              </div>
+              {gapPercentage !== null ? (
+                <>
+                  <div className="flex items-center justify-center gap-2">
+                    {gapPercentage > 0 ? (
+                      <TrendingUp className="h-8 w-8 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-8 w-8 text-red-600" />
+                    )}
+                    <div className={`text-4xl font-bold ${gapPercentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {gapPercentage > 0 ? '+' : ''}
+                      {gapPercentage.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {gapPercentage > 0 ? 'Above' : 'Below'} average
+                  </div>
+                </>
+              ) : (
+                <div className="text-4xl font-bold text-gray-400">N/A</div>
+              )}
             </div>
           </div>
 
@@ -255,11 +266,11 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
                         </div>
                         <div className="text-xs text-green-700 mt-1">
                           Your score: <strong>{item.userScore}</strong> | Industry avg:{' '}
-                          {item.industryAverage.toFixed(2)}
+                          {item.industryAverage !== null ? item.industryAverage.toFixed(2) : 'N/A'}
                         </div>
                       </div>
                       <Badge className="bg-green-600 text-white shrink-0">
-                        +{item.gap.toFixed(1)}
+                        +{item.gap !== null ? item.gap.toFixed(1) : 'N/A'}
                       </Badge>
                     </div>
                   </div>
@@ -294,11 +305,11 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
                         </div>
                         <div className="text-xs text-red-700 mt-1">
                           Your score: <strong>{item.userScore}</strong> | Industry avg:{' '}
-                          {item.industryAverage.toFixed(2)}
+                          {item.industryAverage !== null ? item.industryAverage.toFixed(2) : 'N/A'}
                         </div>
                       </div>
                       <Badge variant="destructive" className="shrink-0">
-                        {item.gap.toFixed(1)}
+                        {item.gap !== null ? item.gap.toFixed(1) : 'N/A'}
                       </Badge>
                     </div>
                   </div>

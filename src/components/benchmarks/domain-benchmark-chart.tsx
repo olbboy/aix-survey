@@ -12,13 +12,13 @@ interface DomainComparison {
   domainCode: string;
   domainName: string;
   userScore: number;
-  industryAverage: number;
-  industryMedian: number;
-  industryP25: number;
-  industryP75: number;
-  industryP90: number;
+  industryAverage: number | null;
+  industryMedian: number | null;
+  industryP25: number | null;
+  industryP75: number | null;
+  industryP90: number | null;
   percentileRank: number;
-  gap: number;
+  gap: number | null;
   ranking: string;
   maturityLevel: string;
 }
@@ -33,10 +33,11 @@ export function DomainBenchmarkChart({ domainComparisons }: DomainBenchmarkChart
       {domainComparisons.map((domain) => {
         const maxScore = 5;
         const userPercentage = (domain.userScore / maxScore) * 100;
-        const avgPercentage = (domain.industryAverage / maxScore) * 100;
-        const p25Percentage = (domain.industryP25 / maxScore) * 100;
-        const p75Percentage = (domain.industryP75 / maxScore) * 100;
-        const p90Percentage = (domain.industryP90 / maxScore) * 100;
+        const avgPercentage = domain.industryAverage !== null ? (domain.industryAverage / maxScore) * 100 : 0;
+        const p25Percentage = domain.industryP25 !== null ? (domain.industryP25 / maxScore) * 100 : 0;
+        const p75Percentage = domain.industryP75 !== null ? (domain.industryP75 / maxScore) * 100 : 0;
+        const p90Percentage = domain.industryP90 !== null ? (domain.industryP90 / maxScore) * 100 : 0;
+        const medianPercentage = domain.industryMedian !== null ? (domain.industryMedian / maxScore) * 100 : 0;
 
         return (
           <div key={domain.domainCode} className="space-y-3">
@@ -64,18 +65,24 @@ export function DomainBenchmarkChart({ domainComparisons }: DomainBenchmarkChart
               <div className="text-center p-2 bg-gray-50 rounded">
                 <div className="text-xs text-gray-700 font-medium">Industry Avg</div>
                 <div className="text-lg font-bold text-gray-900">
-                  {domain.industryAverage.toFixed(2)}
+                  {domain.industryAverage !== null ? domain.industryAverage.toFixed(2) : 'N/A'}
                 </div>
               </div>
               <div className="text-center p-2 bg-green-50 rounded">
                 <div className="text-xs text-green-700 font-medium">Gap</div>
                 <div
                   className={`text-lg font-bold ${
-                    domain.gap > 0 ? 'text-green-900' : 'text-red-900'
+                    domain.gap !== null && domain.gap > 0 ? 'text-green-900' : 'text-red-900'
                   }`}
                 >
-                  {domain.gap > 0 ? '+' : ''}
-                  {domain.gap.toFixed(2)}
+                  {domain.gap !== null ? (
+                    <>
+                      {domain.gap > 0 ? '+' : ''}
+                      {domain.gap.toFixed(2)}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
                 </div>
               </div>
             </div>
@@ -109,44 +116,52 @@ export function DomainBenchmarkChart({ domainComparisons }: DomainBenchmarkChart
               {/* Markers */}
               <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-8">
                 {/* P25 marker */}
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-red-500"
-                  style={{ left: `${p25Percentage}%` }}
-                >
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-red-700 font-medium whitespace-nowrap">
-                    P25
+                {domain.industryP25 !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-red-500"
+                    style={{ left: `${p25Percentage}%` }}
+                  >
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-red-700 font-medium whitespace-nowrap">
+                      P25
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Median marker */}
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-yellow-600"
-                  style={{ left: `${(domain.industryMedian / maxScore) * 100}%` }}
-                >
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-yellow-700 font-medium whitespace-nowrap">
-                    Median
+                {domain.industryMedian !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-yellow-600"
+                    style={{ left: `${medianPercentage}%` }}
+                  >
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-yellow-700 font-medium whitespace-nowrap">
+                      Median
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* P75 marker */}
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-green-600"
-                  style={{ left: `${p75Percentage}%` }}
-                >
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-green-700 font-medium whitespace-nowrap">
-                    P75
+                {domain.industryP75 !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-green-600"
+                    style={{ left: `${p75Percentage}%` }}
+                  >
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-green-700 font-medium whitespace-nowrap">
+                      P75
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* P90 marker */}
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-blue-600"
-                  style={{ left: `${p90Percentage}%` }}
-                >
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-blue-700 font-medium whitespace-nowrap">
-                    P90
+                {domain.industryP90 !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-blue-600"
+                    style={{ left: `${p90Percentage}%` }}
+                  >
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-blue-700 font-medium whitespace-nowrap">
+                      P90
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* User score marker */}
                 <div
