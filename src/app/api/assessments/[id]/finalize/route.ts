@@ -63,16 +63,16 @@ export async function POST(
     }
 
     // Prepare data for scoring
-    const domainData = assessment.template.domains.map((domain) => {
-      const items = domain.items.map((item) => {
-        const response = assessment.responses.find((r) => r.itemId === item.id);
+    const domainData = assessment.template.domains.map((domain: any) => {
+      const items = domain.items.map((item: any) => {
+        const response = assessment.responses.find((r: any) => r.itemId === item.id);
         return {
           itemCode: item.itemCode,
           itemId: item.id,
           score: response?.score || 0,
           weight: item.weight,
         };
-      }).filter((item) => item.score > 0); // Only scored items
+      }).filter((item: any) => item.score > 0); // Only scored items
 
       return {
         domainCode: domain.code,
@@ -89,10 +89,10 @@ export async function POST(
 
     // Create item scores map
     const itemScores: Record<string, number> = {};
-    assessment.responses.forEach((response) => {
+    assessment.responses.forEach((response: any) => {
       const item = assessment.template.domains
-        .flatMap((d) => d.items)
-        .find((i) => i.id === response.itemId);
+        .flatMap((d: any) => d.items)
+        .find((i: any) => i.id === response.itemId);
       if (item) {
         itemScores[item.itemCode] = response.score;
       }
@@ -112,7 +112,7 @@ export async function POST(
         size: assessment.size,
         region: assessment.region,
       },
-      responses: assessment.responses.map((r) => ({
+      responses: assessment.responses.map((r: any) => ({
         itemId: r.itemId,
         score: r.score,
         currentState: r.currentState,

@@ -11,8 +11,14 @@ import { auth } from './auth';
  */
 export async function getSession() {
   try {
+    const cookieStore = await cookies();
+    const headers = new Headers();
+    cookieStore.getAll().forEach((cookie) => {
+      headers.append('cookie', `${cookie.name}=${cookie.value}`);
+    });
+
     const session = await auth.api.getSession({
-      headers: await cookies(),
+      headers,
     });
     return session;
   } catch (error) {

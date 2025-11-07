@@ -64,9 +64,9 @@ export async function GET(
     }
 
     // Prepare item data for gap analysis
-    const items = assessment.template.domains.flatMap((domain) =>
-      domain.items.map((item) => {
-        const response = assessment.responses.find((r) => r.itemId === item.id);
+    const items = assessment.template.domains.flatMap((domain: any) =>
+      domain.items.map((item: any) => {
+        const response = assessment.responses.find((r: any) => r.itemId === item.id);
         return {
           itemCode: item.itemCode,
           itemId: item.id,
@@ -75,7 +75,7 @@ export async function GET(
           domainCode: domain.code,
         };
       })
-    ).filter((item) => item.score > 0);
+    ).filter((item: any) => item.score > 0);
 
     // Calculate gaps and recommendations
     const gaps = calculateItemGaps(items);

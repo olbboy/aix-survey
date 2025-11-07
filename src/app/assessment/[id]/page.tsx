@@ -332,9 +332,10 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
                 <CardContent className="space-y-4">
                   {assessmentData.template.domains.map((domain) => {
                     const answered = domain.items.filter(
-                      (item) =>
-                        responses[item.id]?.score !== null &&
-                        responses[item.id]?.score > 0
+                      (item) => {
+                        const response = responses[item.id];
+                        return response?.score !== null && response?.score !== undefined && response.score > 0;
+                      }
                     ).length;
                     const domainProgress = Math.round(
                       (answered / domain.items.length) * 100

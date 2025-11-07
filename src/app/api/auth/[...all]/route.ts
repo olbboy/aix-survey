@@ -3,6 +3,6 @@
  * Handles all authentication endpoints
  */
 
-import { auth } from '@/lib/auth/auth';
+import { handler } from '@/lib/auth/auth';
 
-export const { GET, POST } = auth.handler;
+export { handler as GET, handler as POST };

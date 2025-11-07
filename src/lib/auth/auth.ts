@@ -11,11 +11,11 @@ import nodemailer from 'nodemailer';
 // Email transporter setup
 const createEmailTransporter = () => {
   if (process.env.EMAIL_SERVER) {
-    return nodemailer.createTransporter(process.env.EMAIL_SERVER);
+    return nodemailer.createTransport(process.env.EMAIL_SERVER);
   }
 
   // Development: Log emails to console
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     streamTransport: true,
     newline: 'unix',
     buffer: true,
@@ -160,9 +160,8 @@ async function sendEmail({
       });
 
       // Log email content in development
-      if (emailTransporter.transporter.name === 'StreamTransport') {
-        const message = info.message.toString();
-        console.log('Email content:', message);
+      if ((emailTransporter.transporter as any).name === 'StreamTransport') {
+        console.log('Email content:', (info as any).message?.toString());
       }
     }
 
@@ -174,18 +173,9 @@ async function sendEmail({
 }
 
 /**
- * Export auth handlers for API routes
+ * Export auth handler for API routes
  */
-export const {
-  handler,
-  signIn,
-  signUp,
-  signOut,
-  sendVerificationEmail,
-  verifyEmail,
-  forgetPassword,
-  resetPassword,
-} = auth;
+export const { handler } = auth;
 
 /**
  * Type-safe session helpers

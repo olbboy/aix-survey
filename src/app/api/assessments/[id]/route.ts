@@ -56,11 +56,11 @@ export async function GET(
     }
 
     // Transform responses to map
-    const responsesMap = assessment.responses.reduce((acc, response) => {
+    const responsesMap = assessment.responses.reduce((acc: any, response: any) => {
       acc[response.itemId] = {
         score: response.score,
         currentState: response.currentState || '',
-        evidences: response.evidences.map((e) => ({
+        evidences: response.evidences.map((e: any) => ({
           id: e.id,
           fileName: e.fileName,
           fileSize: e.fileSize,
@@ -83,11 +83,11 @@ export async function GET(
       },
       template: {
         version: assessment.template.version,
-        domains: assessment.template.domains.map((domain) => ({
+        domains: assessment.template.domains.map((domain: any) => ({
           id: domain.id,
           code: domain.code,
           name: domain.name,
-          items: domain.items.map((item) => ({
+          items: domain.items.map((item: any) => ({
             id: item.id,
             itemCode: item.itemCode,
             itemName: item.itemName,
