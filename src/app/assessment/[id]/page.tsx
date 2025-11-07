@@ -231,7 +231,13 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
       });
 
       if (!response.ok) {
-        throw new Error('Failed to finalize assessment');
+        // Try to get error message from API response
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.message ||
+          'Có lỗi xảy ra khi hoàn thành đánh giá. Vui lòng thử lại.';
+
+        alert(errorMessage);
+        return;
       }
 
       const data = await response.json();

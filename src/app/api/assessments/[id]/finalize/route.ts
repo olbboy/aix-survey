@@ -95,6 +95,36 @@ export async function POST(
     // Calculate scores using scoring engine
     const scores = calculateAssessmentScore(domainData);
 
+    // VALIDATION: Require at least 50% completion before finalizing
+    const MINIMUM_COMPLETION_PERCENTAGE = 50;
+    if (scores.completeness < MINIMUM_COMPLETION_PERCENTAGE) {
+      return NextResponse.json(
+        {
+          error: 'Assessment incomplete',
+          message: `Cần trả lời ít nhất ${MINIMUM_COMPLETION_PERCENTAGE}% câu hỏi để hoàn thành đánh giá`,
+          completeness: scores.completeness,
+          answeredItems: scores.answeredItems,
+          totalItems: scores.totalItems,
+          required: MINIMUM_COMPLETION_PERCENTAGE,
+        },
+        { status: 400 }
+      );
+    }
+
+    // VALIDATION: Ensure at least some items have valid scores
+    if (scores.answeredItems === 0) {
+      return NextResponse.json(
+        {
+          error: 'No responses found',
+          message: 'Vui lòng trả lời ít nhất một câu hỏi trước khi hoàn thành đánh giá',
+          completeness: 0,
+          answeredItems: 0,
+          totalItems: scores.totalItems,
+        },
+        { status: 400 }
+      );
+    }
+
     // Create item scores map (use itemId as key for proper lookup)
     // Only include items with actual scores (> 0)
     const itemScores: Record<string, number> = {};
