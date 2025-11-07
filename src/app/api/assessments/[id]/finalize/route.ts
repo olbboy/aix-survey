@@ -87,14 +87,11 @@ export async function POST(
     // Calculate scores using scoring engine
     const scores = calculateAssessmentScore(domainData);
 
-    // Create item scores map
+    // Create item scores map (use itemId as key for proper lookup)
     const itemScores: Record<string, number> = {};
     assessment.responses.forEach((response: any) => {
-      const item = assessment.template.domains
-        .flatMap((d: any) => d.items)
-        .find((i: any) => i.id === response.itemId);
-      if (item) {
-        itemScores[item.itemCode] = response.score;
+      if (response.itemId && response.score !== null && response.score !== undefined) {
+        itemScores[response.itemId] = response.score;
       }
     });
 

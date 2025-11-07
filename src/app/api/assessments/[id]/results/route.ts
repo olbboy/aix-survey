@@ -63,19 +63,26 @@ export async function GET(
       );
     }
 
-    // Prepare item data for gap analysis
+    // Get itemScores from snapshot (already calculated when finalized)
+    const itemScores = assessment.snapshot.itemScores as Record<string, number>;
+
+    // Prepare item data for gap analysis using snapshot scores
     const items = assessment.template.domains.flatMap((domain: any) =>
-      domain.items.map((item: any) => {
-        const response = assessment.responses.find((r: any) => r.itemId === item.id);
-        return {
-          itemCode: item.itemCode,
-          itemId: item.id,
-          itemName: item.itemName,
-          score: response?.score || 0,
-          domainCode: domain.code,
-        };
-      })
-    ).filter((item: any) => item.score > 0);
+      domain.items
+        .map((item: any) => {
+          const score = itemScores[item.id];
+          if (score === undefined || score === null) return null;
+
+          return {
+            itemCode: item.itemCode,
+            itemId: item.id,
+            itemName: item.itemName,
+            score: score,
+            domainCode: domain.code,
+          };
+        })
+        .filter((item: any) => item !== null && item.score > 0)
+    );
 
     // Calculate gaps and recommendations
     const gaps = calculateItemGaps(items);
@@ -83,16 +90,16 @@ export async function GET(
     const weaknesses = getTopWeaknesses(items, 5);
     const recommendations = generateRecommendations(gaps);
 
-    // Prepare domains with items for radar charts
+    // Prepare domains with items for radar charts using snapshot scores
     const domains = assessment.template.domains.map((domain: any) => ({
       code: domain.code,
       name: domain.name,
       items: domain.items.map((item: any) => {
-        const response = assessment.responses.find((r: any) => r.itemId === item.id);
+        const score = itemScores[item.id] || 0;
         return {
           itemCode: item.itemCode,
           itemName: item.itemName,
-          score: response?.score || 0,
+          score: score,
         };
       }),
     }));
