@@ -93,6 +93,8 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [resultsData, setResultsData] = useState<ResultsData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [exportingCSV, setExportingCSV] = useState(false);
 
   useEffect(() => {
     const loadResults = async () => {
@@ -114,6 +116,72 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
 
     loadResults();
   }, [params.id]);
+
+  const handleExportPDF = async () => {
+    try {
+      setExportingPDF(true);
+      const response = await fetch(`/api/assessments/${params.id}/export/pdf`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export PDF');
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+        : `AI_Maturity_Assessment_${params.id}.pdf`;
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      alert('Không thể xuất báo cáo PDF. Vui lòng thử lại.');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
+  const handleExportCSV = async (format: 'full' | 'simple' = 'full') => {
+    try {
+      setExportingCSV(true);
+      const response = await fetch(`/api/assessments/${params.id}/export/csv?format=${format}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to export CSV');
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+        : `AI_Maturity_Assessment_${params.id}.csv`;
+
+      // Download the CSV
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+      alert('Không thể xuất dữ liệu CSV. Vui lòng thử lại.');
+    } finally {
+      setExportingCSV(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -452,14 +520,45 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
         </Card>
 
         {/* Actions */}
-        <div className="flex gap-4 justify-center">
-          <Button size="lg" variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Xuất báo cáo PDF
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleExportPDF}
+            disabled={exportingPDF}
+          >
+            {exportingPDF ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {exportingPDF ? 'Đang xuất PDF...' : 'Xuất báo cáo PDF'}
           </Button>
-          <Button size="lg">
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Chia sẻ kết quả
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => handleExportCSV('full')}
+            disabled={exportingCSV}
+          >
+            {exportingCSV ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {exportingCSV ? 'Đang xuất CSV...' : 'Xuất CSV (Full)'}
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => handleExportCSV('simple')}
+            disabled={exportingCSV}
+          >
+            {exportingCSV ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {exportingCSV ? 'Đang xuất CSV...' : 'Xuất CSV (Simple)'}
           </Button>
         </div>
       </div>
