@@ -62,6 +62,15 @@ export async function POST(
       });
     }
 
+    // DEBUG: Log assessment data
+    console.log('[Finalize API] Assessment ID:', params.id);
+    console.log('[Finalize API] Total responses in DB:', assessment.responses.length);
+    console.log('[Finalize API] Sample responses:', assessment.responses.slice(0, 5).map((r: any) => ({
+      itemId: r.itemId,
+      score: r.score,
+      scoreType: typeof r.score,
+    })));
+
     // Prepare data for scoring
     const domainData = assessment.template.domains.map((domain: any) => {
       const items = domain.items
@@ -92,12 +101,33 @@ export async function POST(
       };
     });
 
+    // DEBUG: Log domain data
+    console.log('[Finalize API] Domain data:', domainData.map(d => ({
+      domain: d.domainCode,
+      totalItems: d.totalItems,
+      answeredItems: d.items.length,
+    })));
+
     // Calculate scores using scoring engine
     const scores = calculateAssessmentScore(domainData);
+
+    // DEBUG: Log calculated scores
+    console.log('[Finalize API] Calculated scores:', {
+      totalScore: scores.totalScore,
+      completeness: scores.completeness,
+      answeredItems: scores.answeredItems,
+      totalItems: scores.totalItems,
+    });
 
     // VALIDATION: Require at least 50% completion before finalizing
     const MINIMUM_COMPLETION_PERCENTAGE = 50;
     if (scores.completeness < MINIMUM_COMPLETION_PERCENTAGE) {
+      console.error('[Finalize API] VALIDATION FAILED: Completeness below 50%', {
+        completeness: scores.completeness,
+        answeredItems: scores.answeredItems,
+        totalItems: scores.totalItems,
+        required: MINIMUM_COMPLETION_PERCENTAGE,
+      });
       return NextResponse.json(
         {
           error: 'Assessment incomplete',
@@ -106,6 +136,12 @@ export async function POST(
           answeredItems: scores.answeredItems,
           totalItems: scores.totalItems,
           required: MINIMUM_COMPLETION_PERCENTAGE,
+          debug: {
+            totalResponsesInDB: assessment.responses.length,
+            validScores: assessment.responses.filter((r: any) => r.score >= 1 && r.score <= 5).length,
+            nullScores: assessment.responses.filter((r: any) => r.score === null).length,
+            zeroScores: assessment.responses.filter((r: any) => r.score === 0).length,
+          },
         },
         { status: 400 }
       );
@@ -113,6 +149,10 @@ export async function POST(
 
     // VALIDATION: Ensure at least some items have valid scores
     if (scores.answeredItems === 0) {
+      console.error('[Finalize API] VALIDATION FAILED: No answered items', {
+        totalResponsesInDB: assessment.responses.length,
+        validScores: assessment.responses.filter((r: any) => r.score >= 1 && r.score <= 5).length,
+      });
       return NextResponse.json(
         {
           error: 'No responses found',
@@ -120,6 +160,10 @@ export async function POST(
           completeness: 0,
           answeredItems: 0,
           totalItems: scores.totalItems,
+          debug: {
+            totalResponsesInDB: assessment.responses.length,
+            sampleScores: assessment.responses.slice(0, 10).map((r: any) => r.score),
+          },
         },
         { status: 400 }
       );
