@@ -68,8 +68,8 @@ export async function POST(
         .map((item: any) => {
           const response = assessment.responses.find((r: any) => r.itemId === item.id);
 
-          // Only include items that have been scored (score is not null and > 0)
-          if (!response || response.score === null || response.score === undefined || response.score <= 0) {
+          // Only include items that have been scored (score must be 1-5, not null or 0)
+          if (!response || response.score === null || response.score === undefined || response.score < 1) {
             return null;
           }
 
@@ -126,14 +126,14 @@ export async function POST(
     }
 
     // Create item scores map (use itemId as key for proper lookup)
-    // Only include items with actual scores (> 0)
+    // Only include items with actual scores (1-5, not null or 0)
     const itemScores: Record<string, number> = {};
     assessment.responses.forEach((response: any) => {
       if (
         response.itemId &&
         response.score !== null &&
         response.score !== undefined &&
-        response.score > 0
+        response.score >= 1
       ) {
         itemScores[response.itemId] = response.score;
       }

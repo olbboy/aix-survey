@@ -83,7 +83,7 @@ export async function GET(
           response.itemId &&
           response.score !== null &&
           response.score !== undefined &&
-          response.score > 0
+          response.score >= 1
         ) {
           itemScores[response.itemId] = response.score;
         }
@@ -118,7 +118,7 @@ export async function GET(
             domainCode: domain.code,
           };
         })
-        .filter((item: any) => item !== null && item.score > 0)
+        .filter((item: any) => item !== null && item.score >= 1)
     );
 
     // Calculate gaps and recommendations
@@ -137,7 +137,7 @@ export async function GET(
           const score = itemScores[item.id];
 
           // Skip items without scores (don't default to 0!)
-          if (score === undefined || score === null || score <= 0) {
+          if (score === undefined || score === null || score < 1) {
             return null;
           }
 

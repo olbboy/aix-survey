@@ -285,7 +285,7 @@ model Response {
   item          Item     @relation(fields: [itemId], references: [id])
 
   // Answer
-  score         Int      // 1-5
+  score         Int?     // 1-5 (nullable: not yet answered)
   currentState  String?  @db.Text // User's description of current state
 
   createdAt     DateTime @default(now())

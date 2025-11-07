@@ -11,7 +11,11 @@ import { z } from 'zod';
 
 const responsesSchema = z.record(
   z.object({
-    score: z.number().int().min(1).max(5).nullable(),
+    // Score must be 1-5 or null (never 0)
+    score: z.union([
+      z.number().int().min(1).max(5),
+      z.null()
+    ]),
     currentState: z.string().max(5000).optional(),
   })
 );
@@ -74,7 +78,7 @@ export async function PATCH(
       });
 
       const answeredCount = Object.values(responses).filter(
-        (r) => r.score !== null
+        (r) => r.score !== null && r.score >= 1
       ).length;
       const progress = Math.round((answeredCount / totalItems) * 100);
 
@@ -112,6 +116,7 @@ export async function PATCH(
     });
 
     // Calculate progress for response
+    // IMPORTANT: Only count responses with valid scores (1-5), not null or 0
     const totalItems = await prisma.item.count({
       where: {
         domain: {
@@ -120,11 +125,17 @@ export async function PATCH(
       },
     });
 
-    const totalResponses = await prisma.response.count({
-      where: { assessmentId: assessment.id },
+    const answeredResponses = await prisma.response.count({
+      where: {
+        assessmentId: assessment.id,
+        score: {
+          not: null,
+          gte: 1,
+        },
+      },
     });
 
-    const progress = Math.round((totalResponses / totalItems) * 100);
+    const progress = Math.round((answeredResponses / totalItems) * 100);
 
     return NextResponse.json({
       success: true,
