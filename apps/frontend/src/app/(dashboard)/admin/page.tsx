@@ -20,6 +20,7 @@ import {
   Database,
   Shield,
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface DashboardMetrics {
   statistics: {
@@ -60,13 +61,10 @@ export default function AdminDashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [analyticsRes, healthRes] = await Promise.all([
-        fetch('/api/admin/analytics?type=statistics'),
-        fetch('/api/admin/health'),
+      const [analyticsData, healthData] = await Promise.all([
+        api.admin.getAnalytics({ type: 'statistics' }),
+        api.admin.getHealth(),
       ]);
-
-      const analyticsData = await analyticsRes.json();
-      const healthData = await healthRes.json();
 
       setMetrics({
         statistics: analyticsData.statistics,

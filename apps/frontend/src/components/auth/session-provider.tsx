@@ -7,7 +7,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useSession as useBetterAuthSession } from '@/lib/auth/auth-client';
-import type { Session } from '@/lib/auth/auth';
+import type { Session } from '@/lib/auth';
 
 interface SessionContextValue {
   session: Session | null;

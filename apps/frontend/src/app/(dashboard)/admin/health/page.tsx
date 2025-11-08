@@ -21,6 +21,7 @@ import {
   HardDrive,
   Zap,
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface HealthData {
   health: {
@@ -78,9 +79,8 @@ export default function AdminHealthPage() {
 
   const fetchHealthData = async () => {
     try {
-      const res = await fetch('/api/admin/health');
-      const json = await res.json();
-      setData(json);
+      const json = await api.admin.getHealth();
+      setData(json as any);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Failed to fetch health data:', error);

@@ -332,6 +332,14 @@ export class AdminEndpoints {
   async getHealth(): Promise<Record<string, any>> {
     return this.client.get<Record<string, any>>('/admin/health');
   }
+
+  /**
+   * Get platform analytics
+   */
+  async getAnalytics(params?: Record<string, any>): Promise<Record<string, any>> {
+    const query = params ? this.client.buildQueryString(params) : '';
+    return this.client.get<Record<string, any>>(`/admin/analytics${query}`);
+  }
 }
 
 /**

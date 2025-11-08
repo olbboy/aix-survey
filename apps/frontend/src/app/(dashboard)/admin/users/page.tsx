@@ -22,6 +22,7 @@ import {
   Shield,
   Activity,
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface User {
   id: string;
@@ -82,24 +83,23 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const params = new URLSearchParams({
+      const params: Record<string, any> = {
         page: page.toString(),
         pageSize: '20',
-      });
+      };
 
       if (searchQuery) {
-        params.append('search', searchQuery);
+        params.search = searchQuery;
       }
 
       if (roleFilter) {
-        params.append('role', roleFilter);
+        params.role = roleFilter;
       }
 
-      const res = await fetch(`/api/admin/users?${params.toString()}`);
-      const data = await res.json();
+      const data = await api.admin.getUsers(params) as any;
 
       setUsers(data.users);
-      setTotalPages(data.totalPages);
+      setTotalPages(data.totalPages || data.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Failed to fetch users:', error);
     } finally {
@@ -109,8 +109,7 @@ export default function AdminUsersPage() {
 
   const fetchStatistics = async () => {
     try {
-      const res = await fetch('/api/admin/users?type=statistics');
-      const data = await res.json();
+      const data = await api.admin.getAnalytics({ type: 'statistics' });
       setStatistics(data.statistics);
     } catch (error) {
       console.error('Failed to fetch statistics:', error);

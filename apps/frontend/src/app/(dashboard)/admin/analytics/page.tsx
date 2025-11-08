@@ -22,6 +22,7 @@ import {
   Globe,
   Building,
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface AnalyticsData {
   statistics: {
@@ -86,9 +87,8 @@ export default function AdminAnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch(`/api/admin/analytics?days=${timeframe}`);
-      const json = await res.json();
-      setData(json);
+      const json = await api.admin.getAnalytics({ days: timeframe });
+      setData(json as any);
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
     } finally {

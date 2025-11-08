@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 // import { Inter } from 'next/font/google';
 import './globals.css';
-import { SessionProvider } from '@/components/auth/session-provider';
+import { AuthProvider } from '@/lib/auth';
 
 // const inter = Inter({ subsets: ['latin', 'vietnamese'] });
 
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className="font-sans">
-        <SessionProvider>{children}</SessionProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

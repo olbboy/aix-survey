@@ -23,6 +23,9 @@
       "@/*": [
         "apps/frontend/src/*"
       ],
+      "@aix-survey/api-client": [
+        "libs/api-client/src/index.ts"
+      ],
       "@aix-survey/database": [
         "libs/database/src/index.ts"
       ],

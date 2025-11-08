@@ -46,3 +46,6 @@ export {
   hasPermission,
   verifyAdminInRoute,
 } from './middleware-helpers';
+
+// Re-export AuthProvider component
+export { AuthProvider } from './auth-provider';
