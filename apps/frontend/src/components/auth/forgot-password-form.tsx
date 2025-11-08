@@ -40,10 +40,7 @@ export function ForgotPasswordForm() {
     setError(null);
 
     try {
-      const result = await forgetPassword({
-        email: data.email,
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
+      const result = await forgetPassword(data.email);
 
       if (result.error) {
         setError(result.error.message || 'Gửi email thất bại');

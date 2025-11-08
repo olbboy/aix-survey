@@ -22,12 +22,18 @@ const SessionContext = createContext<SessionContextValue>({
 });
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, isPending, error } = useBetterAuthSession();
+  const { data, isPending, error } = useBetterAuthSession();
+
+  // Only create session if we have both user and token
+  const session: Session | null =
+    data && data.user && data.token
+      ? { user: data.user, token: data.token }
+      : null;
 
   return (
     <SessionContext.Provider
       value={{
-        session: session || null,
+        session,
         isLoading: isPending,
         error: error || null,
       }}

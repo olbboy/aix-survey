@@ -51,10 +51,7 @@ export function LoginForm({ redirectTo = '/dashboard', onSuccess }: LoginFormPro
     setError(null);
 
     try {
-      const result = await signIn.email({
-        email: data.email,
-        password: data.password,
-      });
+      const result = await signIn(data.email, data.password);
 
       if (result.error) {
         // Handle specific error cases

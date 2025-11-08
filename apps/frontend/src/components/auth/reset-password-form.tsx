@@ -73,10 +73,7 @@ export function ResetPasswordForm() {
     setError(null);
 
     try {
-      const result = await resetPassword({
-        newPassword: data.password,
-        token,
-      });
+      const result = await resetPassword(token, data.password);
 
       if (result.error) {
         if (result.error.message?.includes('expired')) {

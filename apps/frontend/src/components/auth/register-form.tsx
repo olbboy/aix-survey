@@ -62,11 +62,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     setError(null);
 
     try {
-      const result = await signUp.email({
-        email: data.email,
-        password: data.password,
-        name: data.name,
-      });
+      const result = await signUp(data.email, data.password, data.name);
 
       if (result.error) {
         setError(result.error.message || 'Đăng ký thất bại');

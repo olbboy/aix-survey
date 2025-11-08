@@ -36,11 +36,7 @@ export default function VerifyEmailPage() {
 
     const verify = async () => {
       try {
-        const result = await verifyEmail({
-          query: {
-            token: token!,
-          },
-        });
+        const result = await verifyEmail(token!);
 
         if (result.error) {
           setStatus('error');
