@@ -1,0 +1,320 @@
+# Docker Compose - Staging Environment
+# Multi-service setup for NX monorepo staging deployment
+# Services: PostgreSQL, Redis, Backend (NestJS), Frontend (Next.js)
+
+version: '3.8'
+
+networks:
+  aix-staging-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_staging_data:
+    driver: local
+  redis_staging_data:
+    driver: local
+  staging_logs:
+    driver: local
+
+services:
+  # PostgreSQL Database (Staging)
+  postgres:
+    image: postgres:15-alpine
+    container_name: aix-staging-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aix_survey_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      aix-staging-network:
+        ipv4_address: 172.20.0.10
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-aix_survey_staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache & Session Store (Staging)
+  redis:
+    image: redis:7-alpine
+    container_name: aix-staging-redis
+    restart: unless-stopped
+
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfilename "staging-redis.aof"
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-staging-redis-password}
+
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+
+    volumes:
+      - redis_staging_data:/data
+
+    networks:
+      aix-staging-network:
+        ipv4_address: 172.20.0.11
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend API (NestJS) - Will be available after Phase 03
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: production
+      args:
+        NODE_ENV: staging
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+
+    container_name: aix-staging-backend
+    restart: unless-stopped
+
+    environment:
+      # Application
+      NODE_ENV: staging
+      PORT: 3000
+
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aix_survey_staging}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-staging-redis-password}@redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-staging-redis-password}
+
+      # Authentication
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # CORS
+      CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:3000}
+
+      # Rate Limiting
+      RATE_LIMIT_TTL: 60
+      RATE_LIMIT_MAX: 100
+
+    ports:
+      - "${BACKEND_PORT:-3001}:3000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      aix-staging-network:
+        ipv4_address: 172.20.0.20
+
+    volumes:
+      - staging_logs:/app/logs
+      - ./storage:/app/storage
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # Frontend (Next.js) - Current application
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      target: production
+      args:
+        NODE_ENV: staging
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:3000}
+
+    container_name: aix-staging-frontend
+    restart: unless-stopped
+
+    environment:
+      # Application
+      NODE_ENV: staging
+      PORT: 3000
+
+      # API Configuration
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_TELEMETRY_DISABLED: 1
+
+      # Database (Direct connection for API routes)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-aix_survey_staging}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-staging-redis-password}@redis:6379
+
+      # Authentication
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-${JWT_SECRET}}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      aix-staging-network:
+        ipv4_address: 172.20.0.21
+
+    volumes:
+      - staging_logs:/app/logs
+      - ./storage:/app/storage
+      - ./.next:/app/.next
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # Nginx Reverse Proxy (Optional - for production-like setup)
+  nginx:
+    image: nginx:alpine
+    container_name: aix-staging-nginx
+    restart: unless-stopped
+
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+
+    volumes:
+      - ./nginx/staging.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - staging_logs:/var/log/nginx
+
+    depends_on:
+      - frontend
+      - backend
+
+    networks:
+      aix-staging-network:
+        ipv4_address: 172.20.0.30
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Database Admin UI (pgAdmin) - Optional for debugging
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aix-staging-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@aix-survey.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+
+    depends_on:
+      - postgres
+
+    networks:
+      - aix-staging-network
+
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Commander (Optional for debugging)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: aix-staging-redis-commander
+    restart: unless-stopped
+
+    environment:
+      REDIS_HOSTS: staging:redis:6379:0:${REDIS_PASSWORD:-staging-redis-password}
+
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+
+    depends_on:
+      - redis
+
+    networks:
+      - aix-staging-network
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"

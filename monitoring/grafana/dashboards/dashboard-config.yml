@@ -1,0 +1,41 @@
+# Grafana Dashboard Provisioning Configuration
+# Auto-loads dashboards from the dashboards directory
+
+apiVersion: 1
+
+providers:
+  # Application dashboards
+  - name: 'Application Dashboards'
+    orgId: 1
+    folder: 'AIX Survey'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/application
+      foldersFromFilesStructure: true
+
+  # System dashboards
+  - name: 'System Dashboards'
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/system
+      foldersFromFilesStructure: true
+
+  # Database dashboards
+  - name: 'Database Dashboards'
+    orgId: 1
+    folder: 'Database'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/database
+      foldersFromFilesStructure: true
