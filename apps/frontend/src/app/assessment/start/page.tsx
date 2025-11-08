@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ClipboardList, Clock, FileCheck, TrendingUp } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function AssessmentStartPage() {
   const router = useRouter();
@@ -32,17 +33,7 @@ export default function AssessmentStartPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/assessments/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ industry, size, region }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start assessment');
-      }
-
-      const data = await response.json();
+      const data = await api.assessments.start({ industry, size, region });
       router.push(`/assessment/${data.assessmentId}`);
     } catch (err) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');

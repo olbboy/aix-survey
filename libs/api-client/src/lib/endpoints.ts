@@ -141,6 +141,56 @@ export class AssessmentEndpoints {
   async getResponse(id: string): Promise<AssessmentResponse> {
     return this.client.get<AssessmentResponse>(`/assessments/responses/${id}`);
   }
+
+  /**
+   * Start a new assessment
+   */
+  async start(data: { industry: string; size: string; region: string }): Promise<{ assessmentId: string }> {
+    return this.client.post<{ assessmentId: string }>('/assessments/start', data);
+  }
+
+  /**
+   * Submit responses for an assessment
+   */
+  async submitResponses(id: string, data: any): Promise<any> {
+    return this.client.post<any>(`/assessments/${id}/responses`, data);
+  }
+
+  /**
+   * Finalize an assessment
+   */
+  async finalize(id: string): Promise<any> {
+    return this.client.post<any>(`/assessments/${id}/finalize`);
+  }
+
+  /**
+   * Get assessment results
+   */
+  async getResults(id: string): Promise<any> {
+    return this.client.get<any>(`/assessments/${id}/results`);
+  }
+
+  /**
+   * Export assessment as PDF
+   */
+  async exportPDF(id: string): Promise<Blob> {
+    return this.client.get<Blob>(`/assessments/${id}/export/pdf`, { responseType: 'blob' } as any);
+  }
+
+  /**
+   * Export assessment as CSV
+   */
+  async exportCSV(id: string, format?: string): Promise<Blob> {
+    const query = format ? this.client.buildQueryString({ format }) : '';
+    return this.client.get<Blob>(`/assessments/${id}/export/csv${query}`, { responseType: 'blob' } as any);
+  }
+
+  /**
+   * Send results via email
+   */
+  async sendResults(id: string, data: { emails: string[]; format?: string }): Promise<any> {
+    return this.client.post<any>(`/assessments/${id}/send-results`, data);
+  }
 }
 
 /**
