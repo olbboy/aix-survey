@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from '@aix-survey/database';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
+import { GoalsModule } from '../goals/goals.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -26,6 +27,9 @@ import { AppService } from './app.service';
 
     // Authentication module
     AuthModule,
+
+    // Feature modules
+    GoalsModule,
   ],
   controllers: [AppController],
   providers: [
