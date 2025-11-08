@@ -1,45 +1,534 @@
-# Dependencies
-node_modules
-.pnp
-.pnp.js
+# ================================================================
+# ULTRA-COMPREHENSIVE .GITIGNORE FOR AI MATURITY ASSESSMENT PLATFORM
+# Last Updated: 2025-11-08
+# Covers: Security, Performance, Multi-Platform, Future NX Migration
+# ================================================================
 
-# Testing
-coverage
-.nyc_output
-playwright-report
-test-results
+# ================================================================
+# 🔒 SECURITY & CREDENTIALS (CRITICAL - PREVENTS DATA BREACHES)
+# ================================================================
+# Environment files and secrets
+.env*
+!.env.example
+!.env.sample
+!.env.template
+.env.local
+.env.production
+.env.staging
+.env.development
+.env.test
 
-# Next.js
-.next
-out
-build
-dist
+# Credentials and keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.pub
+.ssh/
+.gnupg/
+credentials.json
+service-account*.json
+google-credentials*.json
+aws-credentials*
+gcp-credentials*
+azure-credentials*
 
-# Production
-*.log
+# Auth tokens and API keys
+.auth
+.auth-*
+auth.json
+token.json
+tokens.json
+api-keys.json
+secrets.json
+.secrets/
+.credentials/
+
+# Database credentials and dumps
+database.url
+db.url
+*.dump
+*.sql.gz
+*.db-backup
+backup.sql
+
+# ================================================================
+# 📦 DEPENDENCIES & PACKAGE MANAGERS
+# ================================================================
+# Node.js
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
 .pnpm-debug.log*
 
-# Environment
-.env
-.env*.local
-.env.production
+# Package manager lock files (keep only one)
+# package-lock.json  # Uncomment if using yarn/pnpm
+# yarn.lock         # Uncomment if using npm/pnpm
+# pnpm-lock.yaml    # Uncomment if using npm/yarn
 
-# IDEs
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# pnpm
+.pnpm-debug.log*
+.pnp
+.pnp.js
+.pnpm-store/
+
+# ================================================================
+# 🏗️ BUILD ARTIFACTS & COMPILATION
+# ================================================================
+# Next.js
+.next/
+out/
+build/
+dist/
+.vercel/
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+*.d.ts.map
+**/*.js.map
+**/*.d.ts
+!**/*.d.ts  # Allow type definitions
+tsconfig.tsbuildinfo
+
+# Build tools
+.cache/
+.tmp/
+.temp/
+temp/
+tmp/
+.build/
+.output/
+.generated/
+
+# Webpack
+.webpack/
+webpack-stats.json
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ================================================================
+# 🧪 TESTING & COVERAGE
+# ================================================================
+# Test results
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+tests/results/
+test-output/
+playwright-report/
+playwright/.cache/
+
+# Jest
+jest-coverage/
+.jest-cache/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/fixtures/generated/
+
+# Vitest
+vitest.config.*.timestamp-*
+
+# ================================================================
+# 🗄️ DATABASE & PRISMA
+# ================================================================
+# Prisma
+prisma/migrations/**/migration.sql.log
+prisma/dev.db*
+prisma/*.db*
+prisma/*.sqlite*
+schema.prisma.backup
+
+# SQLite
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Redis dumps
+dump.rdb
+appendonly.aof
+
+# ================================================================
+# 📱 DEVELOPMENT TOOLS & IDEs
+# ================================================================
+# VSCode
 .vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 !.vscode/extensions.json
-.idea
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Vim/Neovim
 *.swp
 *.swo
 *~
+.netrwhist
+Session.vim
+Sessionx.vim
+.viminfo
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+
+# TextMate
+*.tmproj
+*.tmproject
+tmtags
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcscmblueprint
+*.xccheckout
+
+# ================================================================
+# 💻 OPERATING SYSTEMS
+# ================================================================
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# Prisma
-prisma/migrations/**/migration.sql.log
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# Misc
-*.tsbuildinfo
+# Linux
+*~
+.nfs*
+
+# ================================================================
+# 🚀 DEPLOYMENT & DEVOPS
+# ================================================================
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+Dockerfile.prod
+
+# Kubernetes
+*.kubeconfig
+kube-config
+.kube/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+
+# Ansible
+*.retry
+.vault_pass.txt
+
+# AWS
+.aws/
+aws-exports.js
+
+# Vercel
 .vercel
-.turbo
+
+# Netlify
+.netlify/
+.netlify.toml
+
+# Heroku
+.slugignore
+
+# ================================================================
+# 📊 LOGS & MONITORING
+# ================================================================
+# Application logs
+*.log
+logs/
+log/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime data
+lib-cov/
+.lock-wscript
+
+# Directory for instrumented libs generated by jscoverage/JSCover
+lib-cov/
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output/
+
+# Grunt intermediate storage
+.grunt/
+
+# Bower dependency directory
+bower_components/
+
+# ================================================================
+# 🎨 ASSETS & MEDIA
+# ================================================================
+# Generated images and assets
+public/uploads/
+public/generated/
+assets/generated/
+static/uploads/
+
+# Large media files
+*.mov
+*.mp4
+*.avi
+*.mkv
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.3gp
+*.3g2
+*.rm
+*.swf
+*.fla
+
+# Compressed files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+*.bz2
+*.xz
+*.tgz
+
+# ================================================================
+# 🔧 TOOLS & UTILITIES
+# ================================================================
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# Stylelint cache
+.stylelintcache
+
+# Babel cache
+.babel-cache/
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.parcel-cache/
+
+# Next.js build output
+.next/
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test/
+
+# ================================================================
+# 🔮 FUTURE NX MONOREPO PREPARATION
+# ================================================================
+# NX workspace
+.nx/
+dist/
+.angular/
+
+# Monorepo build artifacts
+apps/*/dist/
+libs/*/dist/
+packages/*/dist/
+tools/*/dist/
+
+# NX cache
+.nx/cache/
+
+# ================================================================
+# 🎯 PROJECT-SPECIFIC
+# ================================================================
+# AI/ML model files
+*.h5
+*.pkl
+*.joblib
+*.model
+models/
+training_data/
+
+# Report generations
+reports/generated/
+exports/
+downloads/
+
+# User uploads
+uploads/
+user-data/
+user-uploads/
+
+# Backup files
+*.backup
+*.bak
+*.orig
+*.rej
+
+# ================================================================
+# 📋 DEVELOPMENT WORKSPACE
+# ================================================================
+# Temporary notes and scratch files
+TODO.md
+NOTES.md
+SCRATCH.md
+scratch/
+notes/
+.notes/
+
+# Local development overrides
+*.local.*
+local.*
+override.*
+
+# ================================================================
+# END OF ULTRA-COMPREHENSIVE .GITIGNORE
+# 
+# 🎯 PURPOSE: Protect sensitive data, optimize performance, support multi-platform development
+# 🔄 MAINTENANCE: Review quarterly or when adding new technologies
+# 📝 DOCUMENTATION: Each section addresses specific security and performance concerns
+# ================================================================
