@@ -17,6 +17,7 @@ import { PercentileRankBadge } from './percentile-rank-badge';
 import { DomainBenchmarkChart } from './domain-benchmark-chart';
 import { TrendChart } from './trend-chart';
 import { TrendingUp, TrendingDown, Users, Target, Award } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface BenchmarkComparisonProps {
   assessmentId: string;
@@ -85,19 +86,12 @@ export function BenchmarkComparison({ assessmentId }: BenchmarkComparisonProps) 
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/assessments/${assessmentId}/benchmark`);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch benchmark data');
-        }
-
-        const benchmarkData = await response.json();
+        const benchmarkData = await api.assessments.getBenchmark(assessmentId);
         setData(benchmarkData);
       } catch (err) {
         console.error('Error fetching benchmark data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load benchmark data');
-      } finally {
+      } finally{
         setLoading(false);
       }
     };

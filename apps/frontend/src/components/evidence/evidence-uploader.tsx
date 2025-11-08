@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, File, CheckCircle2, AlertCircle, Loader2, Download } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface Evidence {
   id: string;
@@ -67,23 +68,11 @@ export function EvidenceUploader({
 
     try {
       // Step 1: Get presigned URL
-      const urlResponse = await fetch(`/api/assessments/${assessmentId}/evidence/upload-url`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          itemCode,
-        }),
+      const { uploadUrl, fileKey } = await api.assessments.getEvidenceUploadUrl(assessmentId, {
+        fileName: file.name,
+        fileSize: file.size,
+        contentType: file.type,
       });
-
-      if (!urlResponse.ok) {
-        const error = await urlResponse.json();
-        throw new Error(error.error || 'Failed to get upload URL');
-      }
-
-      const { uploadUrl, fileKey } = await urlResponse.json();
 
       // Step 2: Upload file to S3 or local storage
       const xhr = new XMLHttpRequest();
@@ -106,26 +95,10 @@ export function EvidenceUploader({
         if (xhr.status >= 200 && xhr.status < 300) {
           // Step 3: Confirm upload
           try {
-            const confirmResponse = await fetch(
-              `/api/assessments/${assessmentId}/evidence/confirm`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  fileKey,
-                  fileName: file.name,
-                  fileType: file.type,
-                  fileSize: file.size,
-                  itemCode,
-                }),
-              }
-            );
-
-            if (!confirmResponse.ok) {
-              throw new Error('Failed to confirm upload');
-            }
-
-            const { evidence: newEvidence } = await confirmResponse.json();
+            const { evidence: newEvidence } = await api.assessments.confirmEvidenceUpload(assessmentId, {
+              evidenceId: fileKey,
+              key: fileKey,
+            });
 
             // Update state
             setUploadingFiles((prev) => {
@@ -198,17 +171,7 @@ export function EvidenceUploader({
     }
 
     try {
-      const response = await fetch(
-        `/api/assessments/${assessmentId}/evidence/${evidenceId}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete evidence');
-      }
-
+      await api.assessments.deleteEvidence(assessmentId, evidenceId);
       setEvidence((prev) => prev.filter((e) => e.id !== evidenceId));
 
       if (onDeleteComplete) {

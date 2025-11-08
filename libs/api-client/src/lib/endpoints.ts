@@ -191,6 +191,41 @@ export class AssessmentEndpoints {
   async sendResults(id: string, data: { emails: string[]; format?: string }): Promise<any> {
     return this.client.post<any>(`/assessments/${id}/send-results`, data);
   }
+
+  /**
+   * Get benchmark comparison data
+   */
+  async getBenchmark(id: string): Promise<any> {
+    return this.client.get<any>(`/assessments/${id}/benchmark`);
+  }
+
+  /**
+   * Get evidence upload URL
+   */
+  async getEvidenceUploadUrl(id: string, data: { fileName: string; fileSize: number; contentType: string }): Promise<any> {
+    return this.client.post<any>(`/assessments/${id}/evidence/upload-url`, data);
+  }
+
+  /**
+   * Confirm evidence upload
+   */
+  async confirmEvidenceUpload(id: string, data: { evidenceId: string; key: string }): Promise<any> {
+    return this.client.post<any>(`/assessments/${id}/evidence/confirm`, data);
+  }
+
+  /**
+   * List evidence for assessment
+   */
+  async listEvidence(id: string): Promise<any> {
+    return this.client.get<any>(`/assessments/${id}/evidence`);
+  }
+
+  /**
+   * Delete evidence
+   */
+  async deleteEvidence(assessmentId: string, evidenceId: string): Promise<void> {
+    return this.client.delete<void>(`/assessments/${assessmentId}/evidence/${evidenceId}`);
+  }
 }
 
 /**
