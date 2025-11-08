@@ -4,6 +4,7 @@
  */
 
 import Redis from 'ioredis';
+import { log } from '@/lib/utils/logger';
 
 // Create Redis client singleton
 const globalForRedis = globalThis as unknown as {
@@ -89,7 +90,11 @@ export async function getAssessmentDraft(
   try {
     return JSON.parse(data);
   } catch (error) {
-    console.error('Failed to parse assessment draft:', error);
+    log.error('Failed to parse assessment draft from Redis', {
+      sessionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      dataLength: data?.length || 0,
+    });
     return null;
   }
 }
@@ -137,7 +142,10 @@ export async function checkRedisConnection(): Promise<boolean> {
     await redis.ping();
     return true;
   } catch (error) {
-    console.error('Redis connection error:', error);
+    log.error('Redis connection error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      redisUrl: process.env.REDIS_URL ? 'configured' : 'using default',
+    });
     return false;
   }
 }
