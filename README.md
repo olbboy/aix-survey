@@ -35,17 +35,34 @@ This platform enables organizations to evaluate their AI maturity level across:
 
 ### Tech Stack
 - **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Node.js
+- **Backend**: NestJS, Node.js, Passport.js (JWT Authentication)
+- **API Client**: @aix-survey/api-client (Type-safe API wrapper)
 - **Database**: PostgreSQL 15+ with Prisma ORM
 - **Cache**: Redis (draft autosave, sessions)
 - **Storage**: S3-compatible (evidence files)
-- **Auth**: NextAuth.js v5 (email/password, magic link, OIDC/SAML)
+- **Auth**: JWT-based authentication with NestJS Passport
+
+### Architecture Pattern
+The application follows a **decoupled full-stack architecture**:
+- **Frontend** (Port 3000): Next.js 14 with App Router for UI rendering
+- **Backend** (Port 3001): NestJS API server with modular architecture
+- **Communication**: Type-safe API client with automatic JWT injection
+
+### Backend Modules
+- **AuthModule**: JWT authentication and user management
+- **GoalsModule**: Goal tracking and progress monitoring (2 endpoints)
+- **BenchmarksModule**: Industry benchmark aggregation (3 endpoints)
+- **OrganizationsModule**: Multi-tenant organization management (2 endpoints)
+- **AdminModule**: Platform administration (7 endpoints)
+- **AssessmentsModule**: AI maturity assessment lifecycle (15 endpoints)
 
 ### Key Design Patterns
 - Multi-tenant architecture with row-level security
-- Immutable snapshots for finalized assessments
+- Immutable snapshots for finalized assessments with SHA-256 checksums
+- Dual authorization model (user ID + guest session ID)
+- Transaction-based database updates for atomicity
 - Event-driven audit logging
-- Optimistic UI updates with autosave
+- Comprehensive input validation with class-validator
 
 ## 🚀 Getting Started
 
@@ -89,62 +106,134 @@ npm run db:migrate
 npm run db:seed
 ```
 
-7. **Start development server**
+7. **Start backend server**
 ```bash
-npm run dev
+npx nx serve backend
+# Backend runs on http://localhost:3001
+# API docs available at http://localhost:3001/api-docs
 ```
 
-8. **Open browser**
+8. **Start frontend server** (in separate terminal)
+```bash
+npx nx serve frontend
+# Frontend runs on http://localhost:3000
 ```
-http://localhost:3000
-```
+
+9. **Access the application**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001/api
+- Swagger Docs: http://localhost:3001/api-docs
 
 ## 📁 Project Structure
 
 ```
-aix-survey/
-├── prisma/
-│   ├── schema.prisma              # Database schema
-│   ├── seed.ts                    # Seed script
-│   └── seed/
-│       └── assessment-data.ts     # 37 assessment items
-├── src/
-│   ├── app/                       # Next.js App Router
-│   │   ├── (public)/             # Public routes (guest assessment)
-│   │   ├── (dashboard)/          # Protected routes
-│   │   └── api/                  # API routes
-│   ├── components/               # React components
-│   ├── lib/                      # Utilities & business logic
-│   │   ├── db/                  # Prisma client
-│   │   ├── auth/                # Auth utilities
-│   │   ├── scoring/             # Scoring engine
-│   │   └── export/              # PDF/CSV export
-│   └── types/                    # TypeScript types
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-└── docker-compose.yml            # Local dev stack
+aix-survey/                        # NX Monorepo
+├── apps/
+│   ├── backend/                   # NestJS Backend
+│   │   └── src/
+│   │       ├── auth/             # Authentication module (JWT)
+│   │       ├── goals/            # Goals module (2 routes)
+│   │       ├── benchmarks/       # Benchmarks module (3 routes)
+│   │       ├── organizations/    # Organizations module (2 routes)
+│   │       ├── admin/            # Admin module (7 routes)
+│   │       ├── assessments/      # Assessments module (15 routes)
+│   │       └── main.ts           # NestJS bootstrap
+│   └── frontend/                  # Next.js Frontend
+│       └── src/
+│           ├── app/              # Next.js App Router
+│           │   ├── (public)/    # Public routes
+│           │   └── (dashboard)/ # Protected routes
+│           ├── components/       # React components
+│           └── lib/              # Frontend utilities
+├── libs/
+│   ├── database/                 # Prisma database library
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma    # Database schema
+│   │   │   └── seed/            # Seed data (37 items)
+│   │   └── src/                  # PrismaService
+│   ├── api-client/               # Type-safe API client
+│   │   └── src/
+│   │       ├── lib/client.ts    # HTTP client
+│   │       ├── lib/endpoints.ts # API endpoints
+│   │       └── lib/hooks.ts     # React hooks
+│   ├── shared/                   # Shared types & utils
+│   └── ui-components/            # Reusable UI components
+└── docs/                          # Documentation
 ```
 
 ## 🧪 Testing
 
 ```bash
-# Unit tests
-npm test
+# Backend tests (192 tests)
+npx nx test backend
+
+# Frontend tests
+npx nx test frontend
+
+# All tests
+npx nx run-many --target=test --all
 
 # Watch mode
-npm run test:watch
+npx nx test backend --watch
 
 # Coverage
-npm run test:coverage
+npx nx test backend --coverage
 
 # E2E tests (Playwright)
-npm run test:e2e
-
-# E2E with UI
-npm run test:e2e:ui
+npx nx e2e frontend-e2e
 ```
+
+### Backend Test Coverage
+- **Total Tests**: 192 passing (100%)
+- **Goals Module**: 30 tests
+- **Benchmarks Module**: 24 tests
+- **Organizations Module**: 35 tests
+- **Admin Module**: 49 tests
+- **Assessments Module**: 54 tests
+
+## 📚 API Documentation
+
+### Swagger/OpenAPI
+Interactive API documentation is available when running the backend:
+- **URL**: http://localhost:3001/api-docs
+- **OpenAPI Spec**: http://localhost:3001/api-docs-json
+
+### API Endpoints Summary
+
+**Authentication** (3 endpoints)
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/auth/profile` - Get current user
+
+**Goals** (2 endpoints)
+- `GET /api/goals/:id` - Get goal with progress
+- `POST /api/goals/check-progress` - Check milestone progress
+
+**Benchmarks** (3 endpoints)
+- `GET /api/benchmarks` - List benchmarks with filters
+- `GET /api/benchmarks/aggregate` - Aggregate benchmark data
+- `GET /api/benchmarks/trends` - Calculate trends
+
+**Organizations** (2 endpoints)
+- `GET /api/organizations/:id/goals` - Get organization goals
+- `GET /api/organizations/:id/progress` - Get organization progress
+
+**Admin** (7 endpoints)
+- `GET /api/admin/health` - System health check
+- `GET /api/admin/users` - List users (paginated)
+- `GET /api/admin/users/:id` - Get user details
+- `PUT /api/admin/users/:id` - Update user
+- `DELETE /api/admin/users/:id` - Delete user
+- `GET /api/admin/audit-logs` - Get audit logs
+- `POST /api/admin/seed` - Seed database
+
+**Assessments** (15 endpoints)
+- Full lifecycle management (start, save, finalize, results)
+- Evidence management (upload, download, delete)
+- Export functionality (PDF, CSV)
+- Comparison features (assessment-to-assessment, benchmarks)
+
+See Swagger documentation for detailed request/response schemas.
 
 ## 📊 Database Schema
 
