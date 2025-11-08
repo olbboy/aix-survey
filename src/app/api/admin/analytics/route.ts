@@ -11,16 +11,18 @@ import {
   getUsageMetrics,
   getPerformanceMetrics,
 } from '@/lib/admin/platform-analytics';
+import { verifyAdminInRoute } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    // TODO: Add admin authentication check here
-    // const session = await getServerSession();
-    // if (!session || session.user.role !== 'ADMIN') {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    // }
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type') || 'all';
@@ -49,6 +51,12 @@ export async function GET(request: NextRequest): Promise<Response> {
       getPerformanceMetrics(),
     ]);
 
+    log.info('Admin fetched platform analytics', {
+      adminId: authResult.user.id,
+      type,
+      days,
+    });
+
     return NextResponse.json({
       statistics,
       usage,
@@ -56,7 +64,10 @@ export async function GET(request: NextRequest): Promise<Response> {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    log.error('Error fetching analytics', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to fetch analytics',

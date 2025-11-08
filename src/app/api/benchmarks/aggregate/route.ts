@@ -11,6 +11,8 @@ import {
   aggregateAllBenchmarks,
   aggregateBenchmarksForSegment,
 } from '@/lib/benchmarks/benchmark-aggregation';
+import { verifyAdminInRoute } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,21 +28,28 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body: AggregateRequest = await request.json();
 
-    // TODO: Add authentication check here - only allow admins
-    // const session = await getSession(request);
-    // if (!session || session.user.role !== 'ADMIN') {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
 
     if (body.aggregateAll) {
       // Aggregate all segments
-      console.log('🔄 Starting full benchmark aggregation...');
+      log.info('Admin starting full benchmark aggregation', {
+        adminId: authResult.user.id,
+        createSnapshots: body.createSnapshots,
+      });
       const startTime = Date.now();
 
       await aggregateAllBenchmarks(body.createSnapshots || false);
 
       const duration = Date.now() - startTime;
-      console.log(`✅ Aggregation complete in ${duration}ms`);
+      log.info('Benchmark aggregation complete', {
+        adminId: authResult.user.id,
+        type: 'full',
+        duration,
+      });
 
       return NextResponse.json({
         success: true,
@@ -49,9 +58,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
     } else if (body.industry && body.size) {
       // Aggregate specific segment
-      console.log(
-        `🔄 Aggregating benchmarks for ${body.industry}/${body.size}/${body.region || 'all'}`
-      );
+      log.info('Admin aggregating segment benchmarks', {
+        adminId: authResult.user.id,
+        industry: body.industry,
+        size: body.size,
+        region: body.region,
+      });
       const startTime = Date.now();
 
       const result = await aggregateBenchmarksForSegment(
@@ -75,6 +87,14 @@ export async function POST(request: NextRequest): Promise<Response> {
         );
       }
 
+      log.info('Segment benchmark aggregation complete', {
+        adminId: authResult.user.id,
+        industry: body.industry,
+        size: body.size,
+        duration,
+        domainCount: result.domainBenchmarks.length,
+      });
+
       return NextResponse.json({
         success: true,
         message: 'Segment benchmarks aggregated successfully',
@@ -96,7 +116,10 @@ export async function POST(request: NextRequest): Promise<Response> {
       );
     }
   } catch (error) {
-    console.error('Error aggregating benchmarks:', error);
+    log.error('Error aggregating benchmarks', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to aggregate benchmarks',

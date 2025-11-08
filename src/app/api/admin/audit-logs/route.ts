@@ -12,12 +12,19 @@ import {
   type AuditLogFilters,
   type AuditAction,
 } from '@/lib/admin/system-monitoring';
+import { verifyAdminInRoute } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    // TODO: Add admin authentication
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
+
     const searchParams = request.nextUrl.searchParams;
 
     // Check for statistics query
@@ -73,9 +80,18 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const result = await getAuditLogs(filters, { page, pageSize });
 
+    log.info('Admin fetched audit logs', {
+      adminId: authResult.user.id,
+      filters,
+      resultCount: result.data?.length || 0,
+    });
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error fetching audit logs:', error);
+    log.error('Error fetching audit logs', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to fetch audit logs',
