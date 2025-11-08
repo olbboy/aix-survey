@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { GoalsModule } from '../goals/goals.module';
 import { BenchmarksModule } from '../benchmarks/benchmarks.module';
+import { OrganizationsModule } from '../organizations/organizations.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -32,6 +33,7 @@ import { AppService } from './app.service';
     // Feature modules
     GoalsModule,
     BenchmarksModule,
+    OrganizationsModule,
   ],
   controllers: [AppController],
   providers: [
