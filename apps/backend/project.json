@@ -36,6 +36,12 @@
         "jestConfig": "apps/backend/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/backend/tsconfig.json"
+      }
     }
   },
   "tags": ["type:app", "scope:backend"]

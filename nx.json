@@ -95,7 +95,8 @@
         "buildTargetName": "build",
         "devTargetName": "dev",
         "startTargetName": "start"
-      }
+      },
+      "include": ["apps/frontend/**"]
     }
   ],
   "defaultProject": "frontend"

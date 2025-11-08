@@ -29,7 +29,8 @@
       "@aix-survey/shared/constants": ["libs/shared/constants/src/index.ts"],
       "@aix-survey/shared/utils": ["libs/shared/utils/src/index.ts"],
       "@aix-survey/database": ["libs/database/src/index.ts"],
-      "@aix-survey/ui-components": ["libs/ui-components/src/index.ts"]
+      "@aix-survey/ui-components": ["libs/ui-components/src/index.ts"],
+      "@prisma/*": ["prisma/*"]
     },
     "plugins": [
       {
