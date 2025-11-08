@@ -33,6 +33,7 @@ import {
   AlertCircle,
   Mail,
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface Gap {
   itemCode: string;
@@ -122,12 +123,7 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const loadResults = async () => {
       try {
-        const response = await fetch(`/api/assessments/${params.id}/results`);
-        if (!response.ok) {
-          throw new Error('Failed to load results');
-        }
-
-        const data = await response.json();
+        const data = await api.assessments.getResults(params.id);
         setResultsData(data);
       } catch (err) {
         setError('Không thể tải kết quả. Vui lòng kiểm tra xem đánh giá đã được hoàn thành chưa.');
@@ -143,20 +139,10 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
   const handleExportPDF = async () => {
     try {
       setExportingPDF(true);
-      const response = await fetch(`/api/assessments/${params.id}/export/pdf`);
-
-      if (!response.ok) {
-        throw new Error('Failed to export PDF');
-      }
-
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition
-        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-        : `AI_Maturity_Assessment_${params.id}.pdf`;
+      const blob = await api.assessments.exportPDF(params.id);
 
       // Download the PDF
-      const blob = await response.blob();
+      const filename = `AI_Maturity_Assessment_${params.id}.pdf`;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -176,20 +162,10 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
   const handleExportCSV = async (format: 'full' | 'simple' = 'full') => {
     try {
       setExportingCSV(true);
-      const response = await fetch(`/api/assessments/${params.id}/export/csv?format=${format}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to export CSV');
-      }
-
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = contentDisposition
-        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-        : `AI_Maturity_Assessment_${params.id}.csv`;
+      const blob = await api.assessments.exportCSV(params.id, format);
 
       // Download the CSV
-      const blob = await response.blob();
+      const filename = `AI_Maturity_Assessment_${params.id}.csv`;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -221,20 +197,10 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
 
     try {
       setSendingEmail(true);
-      const response = await fetch(`/api/assessments/${params.id}/send-results`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientEmail,
-          recipientName: recipientName || undefined,
-          includePDF: true,
-        }),
+      await api.assessments.sendResults(params.id, {
+        emails: [recipientEmail],
+        format: 'pdf',
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to send email');
-      }
 
       alert('Email đã được gửi thành công! Vui lòng kiểm tra hộp thư của bạn.');
       setShowEmailDialog(false);

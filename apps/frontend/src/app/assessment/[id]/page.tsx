@@ -17,6 +17,7 @@ import {
   FileCheck,
   ArrowRight
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface Item {
   id: string;
@@ -78,17 +79,7 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
   const autosaveState = useAutosave(responses, {
     delay: 3000,
     onSave: async (data) => {
-      const response = await fetch(`/api/assessments/${params.id}/responses`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ responses: data }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save');
-      }
-
-      const result = await response.json();
+      const result = await api.assessments.submitResponses(params.id, { responses: data });
       setProgress(result.progress);
     },
   });
@@ -97,12 +88,7 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
   useEffect(() => {
     const loadAssessment = async () => {
       try {
-        const response = await fetch(`/api/assessments/${params.id}`);
-        if (!response.ok) {
-          throw new Error('Failed to load assessment');
-        }
-
-        const data: AssessmentData = await response.json();
+        const data: AssessmentData = await api.assessments.getById(params.id) as any;
         setAssessmentData(data);
         setResponses(data.responses);
 
@@ -226,25 +212,12 @@ export default function AssessmentFormPage({ params }: { params: { id: string } 
     setFinalizing(true);
 
     try {
-      const response = await fetch(`/api/assessments/${params.id}/finalize`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        // Try to get error message from API response
-        const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.message ||
-          'Có lỗi xảy ra khi hoàn thành đánh giá. Vui lòng thử lại.';
-
-        alert(errorMessage);
-        return;
-      }
-
-      const data = await response.json();
+      await api.assessments.finalize(params.id);
       router.push(`/assessment/results/${params.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to finalize:', error);
-      alert('Có lỗi xảy ra khi hoàn thành đánh giá. Vui lòng thử lại.');
+      const errorMessage = error?.message || 'Có lỗi xảy ra khi hoàn thành đánh giá. Vui lòng thử lại.';
+      alert(errorMessage);
     } finally {
       setFinalizing(false);
     }
