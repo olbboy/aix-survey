@@ -5,6 +5,7 @@
 
 import { cookies } from 'next/headers';
 import { auth } from './auth';
+import { log } from '@/lib/utils/logger';
 
 /**
  * Get current session on server
@@ -22,7 +23,9 @@ export async function getSession() {
     });
     return session;
   } catch (error) {
-    console.error('Failed to get session:', error);
+    log.error('Failed to get session', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return null;
   }
 }

@@ -15,6 +15,8 @@ import {
   deleteUserPermanently,
   getUserActivity,
 } from '@/lib/admin/user-management';
+import { verifyAdminInRoute } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +31,12 @@ export async function GET(
   context: RouteContext
 ): Promise<Response> {
   try {
-    // TODO: Add admin authentication
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
+
     const { id: userId } = await context.params;
     const searchParams = request.nextUrl.searchParams;
     const include = searchParams.get('include');
@@ -47,12 +54,27 @@ export async function GET(
     if (include === 'activity') {
       const limit = parseInt(searchParams.get('limit') || '50');
       const activity = await getUserActivity(userId, limit);
+
+      log.info('Admin fetched user details with activity', {
+        adminId: authResult.user.id,
+        targetUserId: userId,
+        activityLimit: limit,
+      });
+
       return NextResponse.json({ user, activity });
     }
 
+    log.info('Admin fetched user details', {
+      adminId: authResult.user.id,
+      targetUserId: userId,
+    });
+
     return NextResponse.json({ user });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    log.error('Error fetching user', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to fetch user',
@@ -68,13 +90,24 @@ export async function PATCH(
   context: RouteContext
 ): Promise<Response> {
   try {
-    // TODO: Add admin authentication
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
+
     const { id: userId } = await context.params;
     const body = await request.json();
 
     // Update user role
     if (body.role) {
       await updateUserRole(userId, body.role);
+
+      log.info('Admin updated user role', {
+        adminId: authResult.user.id,
+        targetUserId: userId,
+        newRole: body.role,
+      });
     }
 
     // Get updated user details
@@ -82,7 +115,10 @@ export async function PATCH(
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error('Error updating user:', error);
+    log.error('Error updating user', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to update user',
@@ -98,15 +134,32 @@ export async function DELETE(
   context: RouteContext
 ): Promise<Response> {
   try {
-    // TODO: Add admin authentication
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
+
     const { id: userId } = await context.params;
     const searchParams = request.nextUrl.searchParams;
     const permanent = searchParams.get('permanent') === 'true';
 
     if (permanent) {
       await deleteUserPermanently(userId);
+
+      log.warn('Admin permanently deleted user', {
+        adminId: authResult.user.id,
+        targetUserId: userId,
+        action: 'PERMANENT_DELETE',
+      });
     } else {
       await deactivateUser(userId);
+
+      log.info('Admin deactivated user', {
+        adminId: authResult.user.id,
+        targetUserId: userId,
+        action: 'DEACTIVATE',
+      });
     }
 
     return NextResponse.json({
@@ -114,7 +167,10 @@ export async function DELETE(
       message: permanent ? 'User permanently deleted' : 'User deactivated',
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    log.error('Error deleting user', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to delete user',

@@ -14,16 +14,18 @@ import {
   getInactiveUsers,
   type UserListFilters,
 } from '@/lib/admin/user-management';
+import { verifyAdminInRoute } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    // TODO: Add admin authentication check
-    // const session = await getServerSession();
-    // if (!session || session.user.role !== 'ADMIN') {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    // }
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
 
     const searchParams = request.nextUrl.searchParams;
 
@@ -80,9 +82,18 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const result = await listUsers(filters, { page, pageSize });
 
+    log.info('Admin users list fetched', {
+      adminId: authResult.user.id,
+      queryType,
+      resultCount: result.data?.length || 0,
+    });
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    log.error('Error fetching users', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to fetch users',

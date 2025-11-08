@@ -7,18 +7,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { getSession } from '@/lib/auth/session-helpers';
 import { nanoid } from 'nanoid';
+import { log } from '@/lib/utils/logger';
 import { z } from 'zod';
 
+// Lightweight schema for assessment start (industry/size/region metadata)
 const startSchema = z.object({
-  industry: z.string().optional(),
-  size: z.string().optional(),
-  region: z.string().optional(),
+  industry: z.string().max(100).trim().optional(),
+  size: z.string().max(50).trim().optional(),
+  region: z.string().max(100).trim().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { industry, size, region } = startSchema.parse(body);
+
+    // ENHANCED: Better validation error handling
+    const result = startSchema.safeParse(body);
+    if (!result.success) {
+      log.warn('Invalid assessment start data', {
+        error: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+      });
+      return NextResponse.json(
+        { error: 'Invalid input', details: result.error.errors },
+        { status: 400 }
+      );
+    }
+
+    const { industry, size, region } = result.data;
 
     // Check if user is logged in
     const session = await getSession();
@@ -74,12 +89,25 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
+    log.info('Assessment started', {
+      assessmentId: assessment.id,
+      userId: userId || 'guest',
+      sessionId,
+      industry,
+      size,
+      region,
+      templateVersion: template.version,
+    });
+
     return NextResponse.json({
       assessmentId: assessment.id,
       templateVersion: template.version,
     });
   } catch (error) {
-    console.error('Failed to start assessment:', error);
+    log.error('Failed to start assessment', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: 'Failed to start assessment' },
       { status: 500 }

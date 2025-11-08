@@ -1,0 +1,83 @@
+# Grafana Datasources Configuration
+# Auto-provisioned datasources for Prometheus and Loki
+
+apiVersion: 1
+
+datasources:
+  # Prometheus datasource
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: true
+
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s
+      queryTimeout: 60s
+
+      # Custom query parameters
+      customQueryParameters: ''
+
+      # Enable exemplars
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: loki
+
+    # Optional: Basic auth
+    # basicAuth: true
+    # basicAuthUser: admin
+    # secureJsonData:
+    #   basicAuthPassword: admin
+
+  # Loki datasource
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    version: 1
+    editable: true
+
+    jsonData:
+      maxLines: 1000
+      timeout: 60s
+
+      # Derived fields for linking to traces
+      derivedFields:
+        - datasourceUid: prometheus
+          matcherRegex: "traceId=(\\w+)"
+          name: TraceID
+          url: '$${__value.raw}'
+
+  # Optional: TestData datasource for testing
+  - name: TestData
+    type: testdata
+    access: proxy
+    isDefault: false
+    version: 1
+    editable: false
+
+  # Optional: PostgreSQL datasource (for direct DB queries)
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: aix_survey_staging
+    user: postgres
+    editable: true
+    version: 1
+
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 10
+      connMaxLifetime: 14400
+
+    # Password stored in secure json data
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+
+deleteDatasources:
+  - name: Old Prometheus
+    orgId: 1

@@ -7,18 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { getSession } from '@/lib/auth/session-helpers';
 import { saveAssessmentDraft, saveProgress } from '@/lib/redis/redis-client';
-import { z } from 'zod';
-
-const responsesSchema = z.record(
-  z.object({
-    // Score must be 1-5 or null (never 0)
-    score: z.union([
-      z.number().int().min(1).max(5),
-      z.null()
-    ]),
-    currentState: z.string().max(5000).optional(),
-  })
-);
+import { log } from '@/lib/utils/logger';
+import { SaveResponsesBodySchema, safeValidate } from '@/lib/validation/schemas';
 
 export async function PATCH(
   request: NextRequest,
@@ -50,7 +40,22 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const responses = responsesSchema.parse(body.responses);
+
+    // ENHANCED: Use centralized validation schema
+    const validation = safeValidate(SaveResponsesBodySchema, body);
+    if (!validation.success) {
+      log.warn('Invalid response data', {
+        assessmentId: params.id,
+        userId: session?.user?.id,
+        error: validation.error,
+      });
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.error },
+        { status: 400 }
+      );
+    }
+
+    const { responses } = validation.data;
 
     // For guests: save to Redis + DB
     // For logged-in: save to DB only
@@ -137,13 +142,25 @@ export async function PATCH(
 
     const progress = Math.round((answeredResponses / totalItems) * 100);
 
+    log.info('Assessment responses saved', {
+      assessmentId: params.id,
+      userId: session?.user?.id || 'guest',
+      sessionId: assessment.sessionId,
+      responseCount: Object.keys(responses).length,
+      progress,
+    });
+
     return NextResponse.json({
       success: true,
       savedAt: new Date().toISOString(),
       progress,
     });
   } catch (error) {
-    console.error('Failed to save responses:', error);
+    log.error('Failed to save responses', {
+      assessmentId: params.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: 'Failed to save responses' },
       { status: 500 }

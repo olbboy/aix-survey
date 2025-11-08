@@ -13,12 +13,19 @@ import {
   getActiveAlerts,
   checkSystemHealth,
 } from '@/lib/admin/system-monitoring';
+import { verifyAdminInRoute } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    // TODO: Add admin authentication
+    // FIXED: Add admin authentication check
+    const authResult = await verifyAdminInRoute(request);
+    if (!authResult.authorized) {
+      return authResult.response!;
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type');
 
@@ -53,6 +60,12 @@ export async function GET(request: NextRequest): Promise<Response> {
       getActiveAlerts(),
     ]);
 
+    log.info('Admin fetched system health', {
+      adminId: authResult.user.id,
+      type,
+      alertsCount: alerts.length,
+    });
+
     return NextResponse.json({
       health: healthCheck,
       database: dbMetrics,
@@ -61,7 +74,10 @@ export async function GET(request: NextRequest): Promise<Response> {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error fetching health status:', error);
+    log.error('Error fetching health status', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to fetch health status',

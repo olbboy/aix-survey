@@ -5,6 +5,8 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifySession } from '@/lib/auth/middleware-helpers';
+import { log } from '@/lib/utils/logger';
 
 // Define protected routes
 const protectedRoutes = [
@@ -31,6 +33,12 @@ const adminRoutes = [
   '/admin',
 ];
 
+// Admin API routes
+const adminApiRoutes = [
+  '/api/admin',
+  '/api/benchmarks/aggregate',
+];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -48,7 +56,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  if (!isProtectedRoute) {
+  const isAdminApiRoute = adminApiRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (!isProtectedRoute && !isAdminApiRoute) {
     return NextResponse.next();
   }
 
@@ -56,25 +68,67 @@ export async function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get('better-auth.session_token');
 
   if (!sessionToken) {
-    // No session - redirect to login
+    // No session - redirect to login for pages, return 401 for API routes
+    if (isAdminApiRoute || pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No session token' },
+        { status: 401 }
+      );
+    }
+
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // TODO: Verify session token and check user roles
-  // For now, just allow if token exists
-  // In production, you should verify the token with the auth server
+  // FIXED: Verify session token instead of just checking existence
+  const session = await verifySession(sessionToken.value);
+
+  if (!session) {
+    log.warn('Invalid session token detected', {
+      pathname,
+      hasToken: !!sessionToken,
+    });
+
+    // Invalid session - redirect to login for pages, return 401 for API routes
+    if (isAdminApiRoute || pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid session' },
+        { status: 401 }
+      );
+    }
+
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   // Check admin routes
   const isAdminRoute = adminRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
-  if (isAdminRoute) {
-    // TODO: Check if user has admin role
-    // For now, allow all authenticated users
-    // You should verify user role from the session
+  if (isAdminRoute || isAdminApiRoute) {
+    // FIXED: Check if user has admin role
+    const userRole = (session.user as any).role;
+
+    if (userRole !== 'ADMIN' && userRole !== 'OWNER') {
+      log.warn('Non-admin user attempted to access admin route', {
+        pathname,
+        userId: session.user.id,
+        userRole,
+      });
+
+      // Forbidden - return 403 for API routes, redirect for pages
+      if (isAdminApiRoute || pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: 'Forbidden - Admin access required' },
+          { status: 403 }
+        );
+      }
+
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
   }
 
   return NextResponse.next();
