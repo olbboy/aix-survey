@@ -1,4 +1,9 @@
 {
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": true
+    }
+  },
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "extends": "nx/presets/npm.json",
   "affected": {
@@ -22,12 +27,21 @@
       "outputs": ["{projectRoot}/dist", "{projectRoot}/.next"]
     },
     "test": {
-      "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js", "{workspaceRoot}/jest.config.js"],
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/jest.preset.js",
+        "{workspaceRoot}/jest.config.js"
+      ],
       "cache": true,
       "outputs": ["{projectRoot}/coverage"]
     },
     "lint": {
-      "inputs": ["default", "{workspaceRoot}/.eslintrc.json", "{workspaceRoot}/.eslintignore"],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/.eslintrc.json",
+        "{workspaceRoot}/.eslintignore"
+      ],
       "cache": true
     },
     "type-check": {
@@ -39,13 +53,15 @@
     },
     "serve": {
       "cache": false
+    },
+    "@nx/js:tsc": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
@@ -54,7 +70,8 @@
       "!{projectRoot}/.eslintrc.json",
       "!{projectRoot}/src/test-setup.[jt]s",
       "!{projectRoot}/test-setup.[jt]s",
-      "!{projectRoot}/**/*.md"
+      "!{projectRoot}/**/*.md",
+      "!{projectRoot}/eslint.config.mjs"
     ],
     "sharedGlobals": [
       "{workspaceRoot}/nx.json",
@@ -97,7 +114,24 @@
         "startTargetName": "start"
       },
       "include": ["apps/frontend/**"]
+    },
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint"
+      }
+    },
+    {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "test"
+      }
     }
   ],
-  "defaultProject": "frontend"
+  "defaultProject": "frontend",
+  "release": {
+    "version": {
+      "preVersionCommand": "npx nx run-many -t build"
+    }
+  }
 }

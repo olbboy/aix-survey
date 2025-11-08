@@ -30,7 +30,8 @@
       "@aix-survey/shared/utils": ["libs/shared/utils/src/index.ts"],
       "@aix-survey/database": ["libs/database/src/index.ts"],
       "@aix-survey/ui-components": ["libs/ui-components/src/index.ts"],
-      "@prisma/*": ["prisma/*"]
+      "@prisma/*": ["prisma/*"],
+      "@aix-survey/api-client": ["libs/api-client/src/index.ts"]
     },
     "plugins": [
       {
