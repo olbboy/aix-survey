@@ -1,148 +1,107 @@
 /**
- * Next.js Middleware
- * Handles authentication and authorization for protected routes
+ * Next.js Middleware (JWT-based, Edge Runtime compatible)
+ * Validates JWT tokens from NestJS backend
+ * Replaces better-auth middleware
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySession } from '@/lib/auth/middleware-helpers';
-import { log } from '@/lib/utils/logger';
 
-// Define protected routes
-const protectedRoutes = [
-  '/dashboard',
-  '/assessments',
-  '/admin',
-  '/profile',
-  '/settings',
-];
-
-// Define public routes (no auth required)
-const publicRoutes = [
-  '/',
+// Public paths that don't require authentication
+const PUBLIC_PATHS = [
   '/auth/login',
   '/auth/register',
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/verify-email',
-  '/assessment/start', // Guest assessment allowed
+  '/',
+  '/_next',
+  '/api',
+  '/favicon.ico',
 ];
 
-// Admin-only routes
-const adminRoutes = [
-  '/admin',
-];
+// Backend API URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-// Admin API routes
-const adminApiRoutes = [
-  '/api/admin',
-  '/api/benchmarks/aggregate',
-];
+/**
+ * Check if path is public
+ */
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some(path => pathname.startsWith(path));
+}
 
+/**
+ * Validate JWT token with backend
+ */
+async function validateToken(token: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      // Don't cache auth checks
+      cache: 'no-store',
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
+}
+
+/**
+ * Middleware function
+ */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if route is public
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isPublicRoute) {
+  // Allow public paths
+  if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
-  // Check if route is protected
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  // Get token from cookie
+  const token = request.cookies.get('auth-token')?.value;
 
-  const isAdminApiRoute = adminApiRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (!isProtectedRoute && !isAdminApiRoute) {
-    return NextResponse.next();
-  }
-
-  // Check for session token in cookies
-  const sessionToken = request.cookies.get('better-auth.session_token');
-
-  if (!sessionToken) {
-    // No session - redirect to login for pages, return 401 for API routes
-    if (isAdminApiRoute || pathname.startsWith('/api/')) {
-      return NextResponse.json(
-        { error: 'Unauthorized - No session token' },
-        { status: 401 }
-      );
-    }
-
+  // No token - redirect to login
+  if (!token) {
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // FIXED: Verify session token instead of just checking existence
-  const session = await verifySession(sessionToken.value);
+  // Validate token with backend
+  const isValid = await validateToken(token);
 
-  if (!session) {
-    log.warn('Invalid session token detected', {
-      pathname,
-      hasToken: !!sessionToken,
-    });
-
-    // Invalid session - redirect to login for pages, return 401 for API routes
-    if (isAdminApiRoute || pathname.startsWith('/api/')) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid session' },
-        { status: 401 }
-      );
-    }
-
+  if (!isValid) {
+    // Invalid token - clear cookie and redirect to login
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete('auth-token');
+    return response;
   }
 
-  // Check admin routes
-  const isAdminRoute = adminRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isAdminRoute || isAdminApiRoute) {
-    // FIXED: Check if user has admin role
-    const userRole = (session.user as any).role;
-
-    if (userRole !== 'ADMIN' && userRole !== 'OWNER') {
-      log.warn('Non-admin user attempted to access admin route', {
-        pathname,
-        userId: session.user.id,
-        userRole,
-      });
-
-      // Forbidden - return 403 for API routes, redirect for pages
-      if (isAdminApiRoute || pathname.startsWith('/api/')) {
-        return NextResponse.json(
-          { error: 'Forbidden - Admin access required' },
-          { status: 403 }
-        );
-      }
-
-      return NextResponse.redirect(new URL('/unauthorized', request.url));
-    }
-  }
-
+  // Token is valid - allow request
   return NextResponse.next();
 }
 
+/**
+ * Middleware configuration
+ * Applies to all routes except static files and API routes
+ */
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public files (public folder)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
