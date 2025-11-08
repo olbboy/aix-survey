@@ -1,5 +1,19 @@
 # AI Maturity Assessment Platform - Architecture Design
 
+## Documentation Index
+
+**Core Architecture Documents:**
+- 📄 **[DATABASE_DESIGN.md](./DATABASE_DESIGN.md)** - Complete database schema, ERD diagrams, and entity documentation
+- 📄 **[SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md)** - Detailed sequence diagrams for all system flows
+- 📄 **[ARCHITECTURE.md](./ARCHITECTURE.md)** - This document: System architecture and component design
+
+**Additional Documentation:**
+- [README.md](./README.md) - Project overview and setup
+- [DATABASE_SETUP.md](./DATABASE_SETUP.md) - Database configuration guide
+- [TROUBLESHOOTING-FINALIZE-ERROR.md](./TROUBLESHOOTING-FINALIZE-ERROR.md) - Common issues and solutions
+
+---
+
 ## 1. System Architecture Overview
 
 ### 1.1 Tech Stack
