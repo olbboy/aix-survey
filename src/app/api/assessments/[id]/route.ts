@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { getSession } from '@/lib/auth/session-helpers';
+import { log } from '@/lib/utils/logger';
 
 export async function GET(
   request: NextRequest,
@@ -70,6 +71,13 @@ export async function GET(
       return acc;
     }, {} as Record<string, any>);
 
+    log.info('Assessment fetched', {
+      assessmentId: params.id,
+      userId: session?.user?.id || 'guest',
+      responseCount: Object.keys(responsesMap).length,
+      status: assessment.status,
+    });
+
     return NextResponse.json({
       assessment: {
         id: assessment.id,
@@ -106,7 +114,11 @@ export async function GET(
       responses: responsesMap,
     });
   } catch (error) {
-    console.error('Failed to get assessment:', error);
+    log.error('Failed to get assessment', {
+      assessmentId: params.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: 'Failed to get assessment' },
       { status: 500 }
