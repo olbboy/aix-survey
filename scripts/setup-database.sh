@@ -8,8 +8,8 @@ set -e
 DB_HOST="10.162.86.60"
 DB_PORT="5432"
 DB_NAME="aix_survey_db"
-DB_USER="postgres"
-DB_PASS="postgres"
+DB_USER="aix_survey"
+DB_PASS="vgCVyb8CA0EQvJeg"
 
 echo "========================================="
 echo "Database Setup Script"
