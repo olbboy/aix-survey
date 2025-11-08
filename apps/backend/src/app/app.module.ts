@@ -8,6 +8,7 @@ import { GoalsModule } from '../goals/goals.module';
 import { BenchmarksModule } from '../benchmarks/benchmarks.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { AdminModule } from '../admin/admin.module';
+import { AssessmentsModule } from '../assessments/assessments.module';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -36,6 +37,7 @@ import { AppService } from './app.service';
     BenchmarksModule,
     OrganizationsModule,
     AdminModule,
+    AssessmentsModule,
   ],
   controllers: [AppController],
   providers: [
