@@ -368,7 +368,12 @@ See `.env.example` for required configuration.
 
 ## 📚 Documentation
 
+### Core Documentation
 - [Architecture Design](./ARCHITECTURE.md) - System architecture and design decisions
+- [Business Logic Analysis](./docs/business-logic-analysis.md) - Comprehensive business logic, data models, and workflows
+- [Sequence Diagrams](./docs/sequence-diagrams.md) - 12 detailed sequence diagrams for all major flows
+
+### API & User Guides
 - [API Documentation](./docs/API.md) - REST API reference (coming soon)
 - [User Guide](./docs/USER_GUIDE.md) - End-user documentation (coming soon)
 - [Admin Guide](./docs/ADMIN_GUIDE.md) - Administrator documentation (coming soon)
